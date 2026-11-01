@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
 import { formatPrice } from '../lib/format'
+import { getUserFacingError } from '../lib/userFacingError'
 import type { Product } from '../types'
 
 interface ProductCardProps {
@@ -8,8 +11,11 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const { customer } = useAuth()
   const { add } = useCart()
   const [added, setAdded] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
   const timer = useRef<number | null>(null)
 
   useEffect(() => {
@@ -18,11 +24,19 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   }, [])
 
-  const handleAdd = () => {
-    add(product.id)
-    setAdded(true)
-    if (timer.current !== null) window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setAdded(false), 1600)
+  const handleAdd = async () => {
+    setAdding(true)
+    setAddError(null)
+    try {
+      await add(product.id)
+      setAdded(true)
+      if (timer.current !== null) window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(() => setAdded(false), 1600)
+    } catch (cause) {
+      setAddError(getUserFacingError(cause, 'cart'))
+    } finally {
+      setAdding(false)
+    }
   }
 
   return (
@@ -69,15 +83,28 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
         <div className="product__foot">
           <span className="product__price">{formatPrice(product.price)}</span>
-          <button
-            type="button"
-            className={`product__add${added ? ' product__add--added' : ''}`}
-            onClick={handleAdd}
-            aria-label={`Añadir ${product.name} a la bolsa`}
-          >
-            {added ? 'Añadido' : 'Añadir'}
-          </button>
+          {customer && (
+            <button
+              type="button"
+              className={`product__add${added ? ' product__add--added' : ''}`}
+              onClick={() => void handleAdd()}
+              disabled={adding}
+              aria-label={`Añadir ${product.name} a la bolsa`}
+            >
+              {adding ? 'Añadiendo…' : added ? 'Añadido' : 'Añadir'}
+            </button>
+          )}
         </div>
+        {!customer && (
+          <Link className="product__signin" to="/iniciar-sesion">
+            Inicia sesión para comprar
+          </Link>
+        )}
+        {addError && (
+          <p className="product__error" role="alert">
+            {addError}
+          </p>
+        )}
       </div>
     </article>
   )

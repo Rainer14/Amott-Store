@@ -4,6 +4,7 @@ import { fetchProductsPage } from '../data/products'
 import { useProducts } from '../data/ProductsContext'
 import type { CategoryFilter, Product } from '../types'
 import { formatPrice } from '../lib/format'
+import { getUserFacingError } from '../lib/userFacingError'
 import { ProductCard } from './ProductCard'
 
 function normalizeSearchText(value: string) {
@@ -137,11 +138,7 @@ export function Collection() {
         })
         .catch((cause: unknown) => {
           if (controller.signal.aborted) return
-          setSearchError(
-            cause instanceof Error
-              ? cause.message
-              : 'No se pudo completar la búsqueda.',
-          )
+          setSearchError(getUserFacingError(cause, 'catalog'))
           setSearchErrorQuery(normalizedSearch)
           setSearchLoadingQuery('')
         })
@@ -198,11 +195,7 @@ export function Collection() {
       setSearchTotal(result.total)
     } catch (cause) {
       if (controller.signal.aborted) return
-      setSearchMoreError(
-        cause instanceof Error
-          ? cause.message
-          : 'No se pudieron cargar más resultados.',
-      )
+      setSearchMoreError(getUserFacingError(cause, 'catalog'))
     } finally {
       searchMoreInFlight.current = false
       if (!controller.signal.aborted) setSearchLoadingMore(false)
@@ -657,8 +650,8 @@ export function Collection() {
         </div>
 
         <p className="collection__note">
-          Precios en USD. El proceso de compra es una demostración y no procesa
-          pagos.
+          Precios en USD. Para comprar, inicia sesión o crea una cuenta de
+          cliente.
         </p>
       </div>
     </section>

@@ -6,14 +6,9 @@ import {
   type ReactNode,
 } from 'react'
 import type { Category, Product } from '../types'
+import { getUserFacingError } from '../lib/userFacingError'
 import { ProductsContext } from './ProductsContext'
 import { fetchProductsPage } from './products'
-
-function getErrorMessage(cause: unknown) {
-  return cause instanceof Error
-    ? cause.message
-    : 'No se pudo establecer conexión con la API.'
-}
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([])
@@ -47,7 +42,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         setError(null)
       } catch (cause) {
         if (requestController.signal.aborted) return
-        setError(getErrorMessage(cause))
+        setError(getUserFacingError(cause, 'catalog'))
       } finally {
         if (!requestController.signal.aborted) setLoading(false)
       }
@@ -105,7 +100,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       setTotalProducts(result.total)
     } catch (cause) {
       if (activeController.signal.aborted) return
-      setLoadMoreError(getErrorMessage(cause))
+      setLoadMoreError(getUserFacingError(cause, 'catalog'))
     } finally {
       requestInFlight.current = false
       if (!activeController.signal.aborted) setLoadingMore(false)

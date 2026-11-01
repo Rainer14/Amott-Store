@@ -6,21 +6,30 @@ import {
   type FormEvent,
 } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
 import { useProducts } from '../data/ProductsContext'
 import { formatPrice } from '../lib/format'
+import {
+  getUserFacingError,
+  HttpRequestError,
+} from '../lib/userFacingError'
 
 type Step = 'bag' | 'checkout' | 'done'
 
 interface Order {
-  number: string
-  email: string
+  id: string | null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 export function CartDrawer() {
+  const { customer, accessToken } = useAuth()
   const {
     lines,
     count,
@@ -29,11 +38,16 @@ export function CartDrawer() {
     close,
     remove,
     setQty,
-    clear,
+    loading: cartLoading,
+    error: cartError,
+    refresh,
   } = useCart()
   const { products } = useProducts()
   const [step, setStep] = useState<Step>('bag')
   const [order, setOrder] = useState<Order | null>(null)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const [checkoutSubmitting, setCheckoutSubmitting] = useState(false)
+  const [cartActionError, setCartActionError] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
@@ -129,16 +143,90 @@ export function CartDrawer() {
     bodyRef.current?.scrollTo({ top: 0 })
   }, [isOpen, step])
 
-  const handleCheckout = (event: FormEvent<HTMLFormElement>) => {
+  const handleCartAction = async (action: () => Promise<void>) => {
+    setCartActionError(null)
+    try {
+      await action()
+    } catch (cause) {
+      setCartActionError(getUserFacingError(cause, 'cart'))
+    }
+  }
+
+  const handleCheckout = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setCheckoutError(null)
+    setCheckoutSubmitting(true)
     const data = new FormData(event.currentTarget)
-    const email = String(data.get('email') ?? '')
-    setOrder({
-      number: `AM-${Math.floor(1000 + Math.random() * 9000)}`,
-      email,
-    })
-    clear()
-    setStep('done')
+    const body = {
+      shippingAddress: {
+        fullName: String(data.get('name') ?? ''),
+        email: String(data.get('email') ?? ''),
+        address: String(data.get('address') ?? ''),
+        city: String(data.get('city') ?? ''),
+        postalCode: String(data.get('postal') ?? ''),
+      },
+    }
+
+    try {
+      const response = await fetch('/api/orders/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      })
+      const text = await response.text()
+      let payload: unknown = null
+      if (text) {
+        try {
+          payload = JSON.parse(text) as unknown
+        } catch {
+          payload = text
+        }
+      }
+
+      if (!response.ok) {
+        throw new HttpRequestError(response.status)
+      }
+
+      const responseData =
+        isRecord(payload) && isRecord(payload.data) ? payload.data : payload
+      const orderData =
+        isRecord(responseData) && isRecord(responseData.order)
+          ? responseData.order
+          : responseData
+      const rawOrderId = isRecord(orderData)
+        ? orderData.id ??
+          orderData.orderId ??
+          orderData.order_id ??
+          orderData.number ??
+          orderData.code
+        : null
+      setOrder({
+        id:
+          typeof rawOrderId === 'string' || typeof rawOrderId === 'number'
+            ? String(rawOrderId)
+            : null,
+      })
+      setStep('done')
+      try {
+        await refresh()
+      } catch {
+        setCheckoutError(
+          'El pedido se confirmó, pero no se pudo actualizar la vista del carrito.',
+        )
+      }
+    } catch (cause) {
+      setCheckoutError(
+        getUserFacingError(cause, 'checkout'),
+      )
+    } finally {
+      setCheckoutSubmitting(false)
+    }
   }
 
   const title =
@@ -154,6 +242,8 @@ export function CartDrawer() {
       : step === 'done'
         ? 'Gracias por mirar de cerca.'
         : `${count} ${count === 1 ? 'producto' : 'productos'} en la bolsa`
+
+  if (!customer) return null
 
   return (
     <div
@@ -199,9 +289,23 @@ export function CartDrawer() {
         </div>
 
         <div className="cart-panel__body" ref={bodyRef}>
+          {cartError && (
+            <p className="cart-action-error" role="alert">
+              No se pudo sincronizar el carrito. {cartError}
+            </p>
+          )}
+          {cartActionError && (
+            <p className="cart-action-error" role="alert">
+              {cartActionError}
+            </p>
+          )}
           {step === 'bag' && (
             <>
-              {lines.length === 0 ? (
+              {cartLoading ? (
+                <p className="cart-loading" role="status">
+                  Cargando tu carrito…
+                </p>
+              ) : lines.length === 0 ? (
                 <div className="cart-empty">
                   <svg
                     className="cart-empty__icon"
@@ -280,8 +384,11 @@ export function CartDrawer() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setQty(product.id, line.qty - 1)
+                                  void handleCartAction(() =>
+                                    setQty(product.id, line.qty - 1),
+                                  )
                                 }
+                                disabled={cartLoading}
                                 aria-label={`Quitar una unidad de ${product.name}`}
                               >
                                 −
@@ -290,8 +397,11 @@ export function CartDrawer() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setQty(product.id, line.qty + 1)
+                                  void handleCartAction(() =>
+                                    setQty(product.id, line.qty + 1),
+                                  )
                                 }
+                                disabled={cartLoading}
                                 aria-label={`Añadir una unidad de ${product.name}`}
                               >
                                 +
@@ -300,7 +410,12 @@ export function CartDrawer() {
                             <button
                               type="button"
                               className="cart-item__remove"
-                              onClick={() => remove(product.id)}
+                              onClick={() =>
+                                void handleCartAction(() =>
+                                  remove(product.id),
+                                )
+                              }
+                              disabled={cartLoading}
                             >
                               Quitar
                             </button>
@@ -315,7 +430,10 @@ export function CartDrawer() {
           )}
 
           {step === 'checkout' && (
-            <form className="checkout" onSubmit={handleCheckout}>
+            <form
+              className="checkout"
+              onSubmit={(event) => void handleCheckout(event)}
+            >
               <button
                 type="button"
                 className="cart-back"
@@ -324,8 +442,14 @@ export function CartDrawer() {
                 Volver a la bolsa
               </button>
               <p className="checkout__intro">
-                Un pedido de demostración. No se procesará ningún pago.
+                Los datos se enviarán de forma segura para crear tu pedido.
               </p>
+
+              {checkoutError && (
+                <p className="cart-action-error" role="alert">
+                  {checkoutError}
+                </p>
+              )}
 
               <label htmlFor="checkout-email">Correo electrónico</label>
               <input
@@ -333,6 +457,7 @@ export function CartDrawer() {
                 name="email"
                 type="email"
                 autoComplete="email"
+                defaultValue={customer.email}
                 required
               />
 
@@ -342,6 +467,7 @@ export function CartDrawer() {
                 name="name"
                 type="text"
                 autoComplete="name"
+                defaultValue={customer.name}
                 required
               />
 
@@ -385,12 +511,10 @@ export function CartDrawer() {
               <button
                 type="submit"
                 className="button button--solid button--full"
+                disabled={checkoutSubmitting}
               >
-                Confirmar pedido
+                {checkoutSubmitting ? 'Procesando…' : 'Confirmar pedido'}
               </button>
-              <p className="cart-demo">
-                Demostración: no se procesará ningún pago.
-              </p>
             </form>
           )}
 
@@ -399,16 +523,19 @@ export function CartDrawer() {
               <span className="cart-done__stamp" aria-hidden="true">
                 AM
               </span>
-              <p className="cart-done__number">Pedido {order.number}</p>
+              {order.id && (
+                <p className="cart-done__number">Pedido {order.id}</p>
+              )}
               <h3>¡Gracias por tu pedido!</h3>
               <p>
-                El pedido de demostración se registró para{' '}
-                <strong>{order.email}</strong>. No se envió ningún correo ni se
-                procesó un pago.
+                Tu pedido se registró correctamente. Recibirás las novedades
+                en el correo asociado a tu cuenta.
               </p>
-              <p className="cart-demo">
-                Demostración: no se procesó ningún pago.
-              </p>
+              {checkoutError && (
+                <p className="cart-action-error" role="alert">
+                  {checkoutError}
+                </p>
+              )}
               <button
                 type="button"
                 className="button button--solid"
@@ -421,7 +548,7 @@ export function CartDrawer() {
           )}
         </div>
 
-        {step === 'bag' && lines.length > 0 && (
+        {step === 'bag' && !cartLoading && lines.length > 0 && (
           <div className="cart-panel__foot">
             <div className="cart-total">
               <span>Subtotal</span>
@@ -433,13 +560,11 @@ export function CartDrawer() {
             <button
               type="button"
               className="button button--solid button--full"
+              disabled={cartLoading}
               onClick={() => setStep('checkout')}
             >
               Finalizar compra
             </button>
-            <p className="cart-demo">
-              Demostración: no se procesará ningún pago.
-            </p>
           </div>
         )}
       </div>

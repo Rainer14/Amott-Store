@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
 import { Logo } from './Logo'
+import { getUserFacingError } from '../lib/userFacingError'
 
 function BagIcon() {
   return (
@@ -31,7 +33,9 @@ function BagIcon() {
 
 export function Header() {
   const { count, open } = useCart()
+  const { customer, loading: authLoading, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -43,6 +47,14 @@ export function Header() {
   }, [menuOpen])
 
   const closeMenu = () => setMenuOpen(false)
+  const handleLogout = async () => {
+    setLogoutError(null)
+    try {
+      await logout()
+    } catch (cause) {
+      setLogoutError(getUserFacingError(cause, 'logout'))
+    }
+  }
 
   return (
     <header className="site-header">
@@ -85,20 +97,61 @@ export function Header() {
           >
             {menuOpen ? 'Cerrar' : 'Menú'}
           </button>
-          <button
-            type="button"
-            className="cart-button"
-            onClick={open}
-            aria-label={`Bolsa ${count}. Abrir la bolsa.`}
-          >
-            <BagIcon />
-            <span className="cart-button__label">Bolsa</span>{' '}
-            <span className="cart-button__count" aria-hidden="true">
-              {count}
-            </span>
-          </button>
+          {!authLoading &&
+            (customer ? (
+              <>
+                <Link
+                  className="header-account-link"
+                  to="/cuenta"
+                  onClick={closeMenu}
+                >
+                  Mi cuenta
+                </Link>
+                <button
+                  type="button"
+                  className="cart-button"
+                  onClick={open}
+                  aria-label={`Bolsa ${count}. Abrir la bolsa.`}
+                >
+                  <BagIcon />
+                  <span className="cart-button__label">Bolsa</span>{' '}
+                  <span className="cart-button__count" aria-hidden="true">
+                    {count}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="header-account-link header-account-link--button"
+                  onClick={() => void handleLogout()}
+                >
+                  Salir
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  className="header-account-link"
+                  to="/iniciar-sesion"
+                  onClick={closeMenu}
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  className="header-register-link"
+                  to="/registro"
+                  onClick={closeMenu}
+                >
+                  Registrarse
+                </Link>
+              </>
+            ))}
         </div>
       </div>
+      {logoutError && (
+        <p className="site-header__error" role="alert">
+          {logoutError}
+        </p>
+      )}
     </header>
   )
 }
