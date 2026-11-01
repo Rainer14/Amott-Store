@@ -1,0 +1,34 @@
+export type CategoryFilter = string
+
+export type SpecimenKind =
+  | 'ammonite'
+  | 'trilobite'
+  | 'tooth'
+  | 'vertebra'
+  | 'loupe'
+  | 'notebook'
+  | 'amber'
+  | 'print'
+
+export interface Product {
+  id: string
+  sku: string
+  slug: string
+  name: string
+  category: string
+  categoryName: string
+  price: number
+  description: string
+  brand: string | null
+  imageUrl: string | null
+}
+
+export interface CartLine {
+  productId: string
+  qty: number
+}
+
+export interface Category {
+  id: string
+  label: string
+}

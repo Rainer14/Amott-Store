@@ -1,0 +1,219 @@
+- generic [ref=f2e2]:
+  - link "Saltar al contenido" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - link "Amott, volver al inicio" [ref=f2e6] [cursor=pointer]:
+        - /url: "#inicio"
+        - generic [ref=f2e7]: amott.
+      - generic [ref=f2e49]:
+        - button "Menú" [ref=f2e50] [cursor=pointer]
+        - button "Bolsa 1. Abrir la bolsa." [ref=f2e51] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f2e55]: "1"
+  - main [ref=f2e56]:
+    - generic [ref=f2e57]:
+      - generic [ref=f2e58]:
+        - generic [ref=f2e59]:
+          - heading "El pasado cabe en una mano." [level=1] [ref=f2e60]:
+            - generic [ref=f2e61]: El pasado
+            - generic [ref=f2e62]: cabe en una
+            - generic [ref=f2e63]: mano.
+          - paragraph [ref=f2e64]: "Amott reúne réplicas de fósiles, herramientas de campo y objetos de papel para quien todavía mira el suelo con curiosidad. Una casa de campo, no un museo: todo se puede tocar."
+          - generic [ref=f2e65]:
+            - link "Ver la colección" [ref=f2e66] [cursor=pointer]:
+              - /url: "#tienda"
+            - link "Leer las notas de campo" [ref=f2e67] [cursor=pointer]:
+              - /url: "#notas"
+          - paragraph [ref=f2e68]: Envíos desde el taller. Embalaje sin plástico.
+        - figure "Lámina 01 Amottosaurus ambulans" [ref=f2e69]:
+          - generic [ref=f2e70]: 10 m
+          - generic [ref=f2e114]:
+            - generic [ref=f2e115]: Lámina 01
+            - generic [ref=f2e116]: Amottosaurus ambulans
+      - generic "Escala de tiempo geológico" [ref=f2e117]:
+        - generic [ref=f2e118]: Triásico
+        - generic [ref=f2e120]: Jurásico
+        - generic [ref=f2e122]: Cretácico
+        - generic [ref=f2e124]: Ahora
+    - generic [ref=f2e127]:
+      - generic [ref=f2e128]:
+        - heading "La colección" [level=2] [ref=f2e129]
+        - paragraph [ref=f2e130]: Objetos para la estantería, el escritorio y la mochila. Cada pieza se moldea, se lija y se numera a mano en el taller.
+      - group "Filtrar por categoría" [ref=f2e131]:
+        - button "Todo 8" [pressed] [ref=f2e132] [cursor=pointer]:
+          - text: Todo
+          - generic [ref=f2e133]: "8"
+        - button "Réplicas 3" [ref=f2e134] [cursor=pointer]:
+          - text: Réplicas
+          - generic [ref=f2e135]: "3"
+        - button "Herramientas 1" [ref=f2e136] [cursor=pointer]:
+          - text: Herramientas
+          - generic [ref=f2e137]: "1"
+        - button "Papel 2" [ref=f2e138] [cursor=pointer]:
+          - text: Papel
+          - generic [ref=f2e139]: "2"
+        - button "Hallazgos 2" [ref=f2e140] [cursor=pointer]:
+          - text: Hallazgos
+          - generic [ref=f2e141]: "2"
+      - status [ref=f2e142]: 8 objetos en Todo.
+      - generic [ref=f2e143]:
+        - article [ref=f2e144]:
+          - generic [ref=f2e145]: Réplicas
+          - generic [ref=f2e161]:
+            - heading "Ammonite" [level=3] [ref=f2e162]
+            - paragraph [ref=f2e163]: Una espiral de 180 millones de años, moldeada en resina y pigmento mineral. Se apoya sola en cualquier repisa.
+            - generic [ref=f2e164]:
+              - generic [ref=f2e165]: Dorset, Inglaterra
+              - generic [ref=f2e166]: Jurásico
+            - generic [ref=f2e167]:
+              - generic [ref=f2e168]: $68
+              - button "Añadir Ammonite a la bolsa" [ref=f2e169] [cursor=pointer]: Añadir
+        - article [ref=f2e170]:
+          - generic [ref=f2e171]: Réplicas
+          - generic [ref=f2e195]:
+            - heading "Trilobite" [level=3] [ref=f2e196]
+            - paragraph [ref=f2e197]: El primer ojo complejo del planeta, reproducido a partir de un ejemplar del Museo de Historia Natural.
+            - generic [ref=f2e198]:
+              - generic [ref=f2e199]: Atlas, Marruecos
+              - generic [ref=f2e200]: Devónico
+            - generic [ref=f2e201]:
+              - generic [ref=f2e202]: $94
+              - button "Añadir Trilobite a la bolsa" [ref=f2e203] [cursor=pointer]: Añadir
+        - article [ref=f2e204]:
+          - generic [ref=f2e205]: Réplicas
+          - generic [ref=f2e217]:
+            - heading "Vértebra de saurópodo" [level=3] [ref=f2e218]
+            - paragraph [ref=f2e219]: Un fragmento de columna del tamaño de un puño. Pesada, porosa e imposible de ignorar sobre un escritorio.
+            - generic [ref=f2e220]:
+              - generic [ref=f2e221]: Hell Creek, Montana
+              - generic [ref=f2e222]: Cretácico
+            - generic [ref=f2e223]:
+              - generic [ref=f2e224]: $220
+              - button "Añadir Vértebra de saurópodo a la bolsa" [ref=f2e225] [cursor=pointer]: Añadir
+        - article [ref=f2e226]:
+          - generic [ref=f2e227]: Hallazgos
+          - generic [ref=f2e239]:
+            - heading "Diente de megalodón" [level=3] [ref=f2e240]
+            - paragraph [ref=f2e241]: Doce centímetros de esmalte y dentina. Un diente que ya no necesita dueño, con su certificado de origen.
+            - generic [ref=f2e242]:
+              - generic [ref=f2e243]: Carolina del Sur
+              - generic [ref=f2e244]: Mioceno
+            - generic [ref=f2e245]:
+              - generic [ref=f2e246]: $140
+              - button "Añadir Diente de megalodón a la bolsa" [ref=f2e247] [cursor=pointer]: Añadir
+        - article [ref=f2e248]:
+          - generic [ref=f2e249]: Herramientas
+          - generic [ref=f2e260]:
+            - heading "Lupa de latón" [level=3] [ref=f2e261]
+            - paragraph [ref=f2e262]: Aumento de 10×, lente de vidrio y un mango que se ablanda con el uso. Para granos de arena con ambiciones.
+            - generic [ref=f2e263]:
+              - generic [ref=f2e264]: Taller Amott
+              - generic [ref=f2e265]: Uso diario
+            - generic [ref=f2e266]:
+              - generic [ref=f2e267]: $46
+              - button "Añadir Lupa de latón a la bolsa" [ref=f2e268] [cursor=pointer]: Añadir
+        - article [ref=f2e269]:
+          - generic [ref=f2e270]: Papel
+          - generic [ref=f2e284]:
+            - heading "Cuaderno de campo n.º 7" [level=3] [ref=f2e285]
+            - paragraph [ref=f2e286]: Papel de algodón, tapa de lona encerada y una banda elástica que no se rinde. Cabe en el bolsillo de la chaqueta.
+            - generic [ref=f2e287]:
+              - generic [ref=f2e288]: Hecho en Michigan
+              - generic [ref=f2e289]: Uso diario
+            - generic [ref=f2e290]:
+              - generic [ref=f2e291]: $18
+              - button "Añadir Cuaderno de campo n.º 7 a la bolsa" [ref=f2e292] [cursor=pointer]: Añadir
+        - article [ref=f2e293]:
+          - generic [ref=f2e294]: Hallazgos
+          - generic [ref=f2e309]:
+            - heading "Colgante de ámbar" [level=3] [ref=f2e310]
+            - paragraph [ref=f2e311]: Una gota de resina con una inclusión que llevaba 40 millones de años esperando. Cadena de latón incluida.
+            - generic [ref=f2e312]:
+              - generic [ref=f2e313]: Mar Báltico
+              - generic [ref=f2e314]: Eoceno
+            - generic [ref=f2e315]:
+              - generic [ref=f2e316]: $120
+              - button "Añadir Colgante de ámbar a la bolsa" [ref=f2e317] [cursor=pointer]: Añadir
+        - article [ref=f2e318]:
+          - generic [ref=f2e319]: Papel
+          - generic [ref=f2e333]:
+            - heading "Lámina del mar interior" [level=3] [ref=f2e334]
+            - paragraph [ref=f2e335]: El centro de Norteamérica era un océano poco profundo. Impresión en dos tintas sobre papel de algodón, 30 × 40 cm.
+            - generic [ref=f2e336]:
+              - generic [ref=f2e337]: Impreso en Michigan
+              - generic [ref=f2e338]: Cretácico
+            - generic [ref=f2e339]:
+              - generic [ref=f2e340]: $38
+              - button "Añadir Lámina del mar interior a la bolsa" [ref=f2e341] [cursor=pointer]: Añadir
+      - paragraph [ref=f2e342]: Precios en USD. El envío se calcula al finalizar la compra.
+    - generic [ref=f2e344]:
+      - generic [ref=f2e345]:
+        - heading "Notas de campo" [level=2] [ref=f2e346]
+        - paragraph [ref=f2e347]: "Lo que aprendimos mirando el suelo: despachos, guías y argumentos para tener un fósil en casa."
+      - generic [ref=f2e348]:
+        - article [ref=f2e349]:
+          - generic [ref=f2e350]:
+            - heading "Lo que guardan las tierras baldías" [level=3] [ref=f2e351]
+            - paragraph [ref=f2e352]: En Montana, la formación Hell Creek entrega a sus muertos una tormenta de lluvia a la vez. Lo que parece un montón de arcilla gris puede ser la página de un río de hace 66 millones de años.
+            - paragraph [ref=f2e353]: Pasamos una semana con una paleobotánica, una pala y demasiado café. Volvimos con tres fragmentos de hueso, una libreta mojada y la certeza de que buscar es una forma de leer.
+          - paragraph [ref=f2e354]: Hell Creek, Montana. Septiembre.
+        - generic [ref=f2e355]:
+          - group [ref=f2e356]:
+            - generic "Cómo leer un diente 3 min +" [ref=f2e357] [cursor=pointer]:
+              - generic [ref=f2e358]: Cómo leer un diente
+              - generic [ref=f2e359]: 3 min
+              - text: +
+          - group [ref=f2e360]:
+            - generic "El caso de las réplicas 4 min +" [ref=f2e361] [cursor=pointer]:
+              - generic [ref=f2e362]: El caso de las réplicas
+              - generic [ref=f2e363]: 4 min
+              - text: +
+    - generic [ref=f2e365]:
+      - generic [ref=f2e366]:
+        - heading "Una casa de campo para quien mira el suelo." [level=2] [ref=f2e367]
+        - paragraph [ref=f2e368]: "Amott nació en una mesa de taller, entre moldes de silicona y cajas de papel. No vendemos piezas únicas ni promesas de museo: vendemos objetos bien hechos para mirar de cerca, tocar sin miedo y volver a mirar."
+        - paragraph [ref=f2e369]: Taller en Grand Rapids, Michigan.
+      - generic [ref=f2e370]:
+        - generic [ref=f2e371]:
+          - term [ref=f2e372]: Hecho a mano
+          - definition [ref=f2e373]: Cada réplica sale de un molde autorizado, se lija y se pigmenta en el taller. Las diferencias entre una pieza y otra son parte del oficio.
+        - generic [ref=f2e374]:
+          - term [ref=f2e375]: Pensado para tocarse
+          - definition [ref=f2e376]: Nada de vitrinas ni guantes de algodón. Estas piezas están para el escritorio, la repisa y el bolsillo de la chaqueta.
+        - generic [ref=f2e377]:
+          - term [ref=f2e378]: Enviado con cuidado
+          - definition [ref=f2e379]: Embalaje de papel reciclado, sin plástico. Si algo llega mal, lo reponemos y nos ocupamos del regreso.
+  - contentinfo [ref=f2e380]:
+    - generic [ref=f2e386]:
+      - generic [ref=f2e387]:
+        - heading "Una carta de campo cada mes." [level=2] [ref=f2e388]
+        - paragraph [ref=f2e389]: Fósiles recién salidos del molde, notas desde la excavación y nada de ruido. Puedes irte cuando quieras.
+        - generic [ref=f2e390]:
+          - generic [ref=f2e391]: Correo electrónico
+          - textbox "Correo electrónico" [ref=f2e392]:
+            - /placeholder: tu@correo.com
+          - button "Recibir la carta" [ref=f2e393] [cursor=pointer]
+      - generic [ref=f2e394]:
+        - generic [ref=f2e395]:
+          - generic [ref=f2e396]: amott.
+          - paragraph [ref=f2e438]: Objetos de historia natural para quienes todavía miran el suelo con curiosidad.
+        - navigation "Enlaces del pie" [ref=f2e439]:
+          - generic [ref=f2e440]:
+            - heading "Explorar" [level=3] [ref=f2e441]
+            - link "Tienda" [ref=f2e442] [cursor=pointer]:
+              - /url: "#tienda"
+            - link "Notas de campo" [ref=f2e443] [cursor=pointer]:
+              - /url: "#notas"
+            - link "La casa" [ref=f2e444] [cursor=pointer]:
+              - /url: "#casa"
+          - generic [ref=f2e445]:
+            - heading "Contacto" [level=3] [ref=f2e446]
+            - link "hola@amott.shop" [ref=f2e447] [cursor=pointer]:
+              - /url: mailto:hola@amott.shop
+            - link "Envíos y devoluciones" [ref=f2e448] [cursor=pointer]:
+              - /url: mailto:hola@amott.shop?subject=Env%C3%ADos%20y%20devoluciones
+            - generic [ref=f2e449]: Grand Rapids, Michigan
+      - generic [ref=f2e450]:
+        - paragraph [ref=f2e451]: © 2026 Amott. Hecho en Michigan.
+        - paragraph [ref=f2e452]: Precios en USD.
+  - status
