@@ -19,6 +19,7 @@ export interface Product {
   categoryName: string
   price: number
   description: string
+  fullDescription?: string
   brand: string | null
   imageUrl: string | null
 }

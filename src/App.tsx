@@ -12,6 +12,7 @@ import { CartToast } from './components/CartToast'
 import { Collection } from './components/Collection'
 import { BuyingGuide } from './components/BuyingGuide'
 import { CustomerAccess, CustomerAccount } from './components/CustomerAccess'
+import { ProductDetail } from './components/ProductDetail'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
@@ -60,6 +61,7 @@ function App() {
           <main id="main">
             <Routes>
               <Route path="/" element={<Collection />} />
+              <Route path="/producto/:slug" element={<ProductDetail />} />
               <Route path="/nosotros" element={<AboutPage />} />
               <Route
                 path="/iniciar-sesion"

@@ -54,6 +54,35 @@ function slugifyProductName(name: string) {
     .replace(/^-|-$/g, '')
 }
 
+function mapApiProduct(item: ApiProduct): Product {
+  return {
+    id: item.id,
+    sku: item.sku,
+    slug: item.slug?.trim() || slugifyProductName(item.name),
+    name: item.name,
+    category: item.category.slug,
+    categoryName: item.category.name,
+    price: item.price,
+    description:
+      item.short_description?.trim() || item.description?.trim() || '',
+    fullDescription: item.description?.trim() || undefined,
+    brand: item.brand,
+    imageUrl: item.main_image_url,
+  }
+}
+
+export function parseProductDetail(value: unknown): Product | null {
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+  const candidate =
+    typeof record.product === 'object' && record.product !== null
+      ? record.product
+      : typeof record.data === 'object' && record.data !== null
+        ? record.data
+        : value
+  return isApiProduct(candidate) ? mapApiProduct(candidate) : null
+}
+
 export function parseProductsResponse(
   value: unknown,
 ): {
@@ -82,19 +111,7 @@ export function parseProductsResponse(
     return null
   }
 
-  const products = value.items.map((item) => ({
-    id: item.id,
-    sku: item.sku,
-    slug: item.slug?.trim() || slugifyProductName(item.name),
-    name: item.name,
-    category: item.category.slug,
-    categoryName: item.category.name,
-    price: item.price,
-    description:
-      item.short_description?.trim() || item.description?.trim() || '',
-    brand: item.brand,
-    imageUrl: item.main_image_url,
-  }))
+  const products = value.items.map(mapApiProduct)
   const categoryMap = new Map(
     products.map((product) => [
       product.category,

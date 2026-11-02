@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { fetchProductsPage } from '../data/products'
 import { useProducts } from '../data/ProductsContext'
 import type { CategoryFilter, Product } from '../types'
+import {
+  clearCatalogSnapshot,
+  readCatalogSnapshot,
+} from '../lib/catalogNavigation'
 import { formatPrice } from '../lib/format'
 import { getUserFacingError } from '../lib/userFacingError'
 import { ProductCard } from './ProductCard'
@@ -75,6 +79,9 @@ async function fetchCatalogSearchPage(
 }
 
 export function Collection() {
+  const location = useLocation()
+  const returnTo = `${location.pathname}${location.search}${location.hash}`
+  const [catalogSnapshot] = useState(() => readCatalogSnapshot(returnTo))
   const [searchParams, setSearchParams] = useSearchParams()
   const searchQuery = searchParams.get('q') ?? ''
   const normalizedSearch = normalizeSearchText(searchQuery)
@@ -91,10 +98,19 @@ export function Collection() {
   const [searchTotal, setSearchTotal] = useState(0)
   const [searchLoadingMore, setSearchLoadingMore] = useState(false)
   const [searchMoreError, setSearchMoreError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<CategoryFilter>('todo')
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([])
-  const [maxPrice, setMaxPrice] = useState<number | null>(null)
-  const [filtersExpanded, setFiltersExpanded] = useState(true)
+  const [filter, setFilter] = useState<CategoryFilter>(
+    catalogSnapshot?.filter ?? 'todo',
+  )
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(
+    catalogSnapshot?.selectedBrands ?? [],
+  )
+  const [maxPrice, setMaxPrice] = useState<number | null>(
+    catalogSnapshot?.maxPrice ?? null,
+  )
+  const [filtersExpanded, setFiltersExpanded] = useState(
+    catalogSnapshot?.filtersExpanded ?? true,
+  )
+  const restoredScroll = useRef(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const searchControllerRef = useRef<AbortController | null>(null)
   const searchMoreInFlight = useRef(false)
@@ -214,6 +230,24 @@ export function Collection() {
     searchErrorQuery !== normalizedSearch &&
     (searchResultQuery !== normalizedSearch ||
       searchLoadingQuery === normalizedSearch)
+
+  useEffect(() => {
+    if (
+      !catalogSnapshot ||
+      restoredScroll.current ||
+      loading ||
+      searchIsPending
+    ) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo(0, catalogSnapshot.scrollY)
+      clearCatalogSnapshot()
+      restoredScroll.current = true
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [catalogSnapshot, loading, searchIsPending])
   const searchHasNextPage =
     normalizedSearch && searchResultQuery === normalizedSearch
       ? searchHasMore
@@ -594,7 +628,16 @@ export function Collection() {
 
             <div className="product-grid">
               {visibleProducts.map((product) => (
-                <ProductCard product={product} key={product.id} />
+                <ProductCard
+                  product={product}
+                  key={product.id}
+                  catalogSnapshot={{
+                    filter,
+                    selectedBrands,
+                    maxPrice,
+                    filtersExpanded,
+                  }}
+                />
               ))}
               {isLoadingMore &&
                 Array.from({ length: 3 }, (_, index) => (

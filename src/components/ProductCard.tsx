@@ -1,16 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
+import {
+  saveCatalogSnapshot,
+  type CatalogSnapshot,
+} from '../lib/catalogNavigation'
 import { formatPrice } from '../lib/format'
 import { getUserFacingError } from '../lib/userFacingError'
 import type { Product } from '../types'
 
 interface ProductCardProps {
   product: Product
+  catalogSnapshot?: Omit<CatalogSnapshot, 'scrollY' | 'returnTo'>
+  catalogReturnTo?: string
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({
+  product,
+  catalogSnapshot,
+  catalogReturnTo,
+}: ProductCardProps) {
+  const location = useLocation()
   const { customer } = useAuth()
   const { add } = useCart()
   const [added, setAdded] = useState(false)
@@ -38,10 +49,31 @@ export function ProductCard({ product }: ProductCardProps) {
       setAdding(false)
     }
   }
+  const returnTo =
+    catalogReturnTo ?? `${location.pathname}${location.search}${location.hash}`
+  const detailState = {
+    product,
+    returnTo,
+    ...(catalogSnapshot ? { catalogSnapshot } : {}),
+  }
+  const saveReturnPosition = () => {
+    if (!catalogSnapshot || location.pathname !== '/') return
+    saveCatalogSnapshot({
+      ...catalogSnapshot,
+      scrollY: window.scrollY,
+      returnTo,
+    })
+  }
 
   return (
     <article className={`product product--${product.category}`}>
-      <div className="product__art">
+      <Link
+        className="product__art product__art-link"
+        to={`/producto/${encodeURIComponent(product.slug)}`}
+        state={detailState}
+        onClick={saveReturnPosition}
+        aria-label={`Ver detalles de ${product.name}`}
+      >
         <span className="product__tag">
           <i aria-hidden="true" />
           {product.categoryName}
@@ -50,15 +82,11 @@ export function ProductCard({ product }: ProductCardProps) {
           <img
             className="product__image"
             src={product.imageUrl}
-            alt={product.name}
+            alt=""
             loading="lazy"
           />
         ) : (
-          <div
-            className="product__image-placeholder"
-            role="img"
-            aria-label={`Imagen no disponible: ${product.name}`}
-          >
+          <div className="product__image-placeholder" aria-hidden="true">
             <svg viewBox="0 0 48 48" aria-hidden="true">
               <path
                 d="M8 16h32v24H8zM15 16l3-7h12l3 7M8 23h32M20 28h8v12"
@@ -70,10 +98,18 @@ export function ProductCard({ product }: ProductCardProps) {
             </svg>
           </div>
         )}
-      </div>
+      </Link>
 
       <div className="product__body">
-        <h3>{product.name}</h3>
+        <h3>
+          <Link
+            to={`/producto/${encodeURIComponent(product.slug)}`}
+            state={detailState}
+            onClick={saveReturnPosition}
+          >
+            {product.name}
+          </Link>
+        </h3>
         <p className="product__blurb">
           {product.description || 'Sin descripción disponible.'}
         </p>
