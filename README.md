@@ -1,48 +1,46 @@
 # Amott
 
-Casa de historia natural ficticia: réplicas de fósiles, herramientas de campo, papel y pequeños hallazgos para quien todavía mira el suelo con curiosidad.
+Tienda en línea con catálogo público, búsqueda y filtros, páginas de detalle de producto, autenticación de clientes y carrito con checkout.
 
-Sitio de una sola página construido con React, TypeScript y Vite. La interfaz está en español y usa una estética de catálogo de campo, con un dinosaurio animado como marca.
+Aplicación SPA construida con React, TypeScript y Vite. La API debe estar disponible por separado; este proyecto contiene únicamente el frontend.
 
-## Puesta en marcha
+## Requisitos
 
-Requiere Node `^20.19.0` o `>=22.12.0`.
+- Node `^20.19.0` o `>=22.12.0`
+- API de Amott ejecutándose en `http://localhost:3001` durante el desarrollo
+
+## Desarrollo local
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
+
+Vite proxifica las peticiones `/api` a `http://localhost:3001`. Para apuntar a otra API, define `VITE_API_BASE_URL` en el entorno de compilación con el origen público de la API, sin añadir `/api` al final.
 
 ## Scripts
 
 | Comando | Descripción |
 | --- | --- |
-| `npm run dev` | Servidor de desarrollo con Vite. |
-| `npm run build` | Comprueba TypeScript y genera la versión de producción en `dist/`. |
-| `npm run preview` | Sirve la compilación de producción. |
+| `npm run dev` | Inicia el servidor de desarrollo de Vite. |
+| `npm run build` | Comprueba TypeScript y genera `dist/`. |
+| `npm run preview` | Sirve localmente la compilación. |
 | `npm run lint` | Ejecuta ESLint. |
 
-## Funcionalidad
+## Deploy en Render
 
-- Catálogo de 8 piezas con filtros por categoría y contador accesible.
-- Bolsa persistente en `localStorage` (`amott-bag-v1`), cantidades y subtotal.
-- Checkout de demostración con validación nativa y confirmación de pedido. No procesa pagos.
-- Cajón de bolsa con trampa de foco, cierre con Escape y restauración del foco.
-- Navegación móvil, formulario de newsletter y acordeones de notas de campo.
-- Animaciones del dinosaurio con respeto a `prefers-reduced-motion`.
-- Tipografías autoalojadas con Fontsource: Bricolage Grotesque y Newsreader.
+El archivo `render.yaml` define un Static Site para Render:
 
-## Estructura
+- Build command: `npm ci && npm run build`
+- Publish directory: `dist`
+- Rewrite `/*` → `/index.html` para que funcionen las rutas de React Router.
 
-```text
-src/
-  cart/          Estado y contexto de la bolsa
-  components/    Secciones, marca, arte de especímenes y cajón de compra
-  data/          Catálogo y categorías
-  lib/           Utilidades de formato
-  App.tsx        Composición de la página
-  index.css      Tokens, base tipográfica y accesibilidad
-  App.css        Estilos de componentes y responsive
-```
+Para desplegar:
 
-El checkout es una demostración local: los pedidos no se envían a ningún servidor.
+1. Sube el repositorio a GitHub y en Render crea un **Blueprint** desde ese repositorio, o crea manualmente un Static Site con los valores anteriores.
+2. Despliega el frontend. Mientras no haya una API publicada, la interfaz estará disponible pero las funciones que cargan o modifican datos no funcionarán.
+3. Cuando la API esté publicada, define `VITE_API_BASE_URL` en la configuración de entorno de build de Render como su origen HTTPS (por ejemplo, `https://api.ejemplo.com`, sin `/api` al final) y vuelve a desplegar.
+
+`VITE_API_BASE_URL` es pública porque se incorpora al bundle del navegador. No guardes secretos en variables `VITE_*`.
+
+Si el frontend y la API están en orígenes distintos, el backend debe permitir CORS para el dominio de Render con credenciales, y configurar las cookies de sesión para HTTPS y el uso entre sitios. La autenticación también envía tokens Bearer cuando están disponibles.

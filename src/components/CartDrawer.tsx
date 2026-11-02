@@ -14,6 +14,7 @@ import {
   getUserFacingError,
   HttpRequestError,
 } from '../lib/userFacingError'
+import { apiUrl } from '../lib/api'
 
 type Step = 'bag' | 'checkout' | 'done'
 
@@ -168,7 +169,7 @@ export function CartDrawer() {
     }
 
     try {
-      const response = await fetch('/api/orders/checkout', {
+      const response = await fetch(apiUrl('/api/orders/checkout'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

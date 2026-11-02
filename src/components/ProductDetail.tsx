@@ -6,6 +6,7 @@ import { fetchProductsPage, parseProductDetail } from '../data/products'
 import { useProducts } from '../data/ProductsContext'
 import { formatPrice } from '../lib/format'
 import { getUserFacingError, HttpRequestError } from '../lib/userFacingError'
+import { apiUrl } from '../lib/api'
 import type { Product } from '../types'
 import { ProductCard } from './ProductCard'
 
@@ -67,7 +68,7 @@ function parseImages(payload: unknown): ProductImage[] {
 
 async function fetchProductImages(productId: string, signal: AbortSignal) {
   const response = await fetch(
-    `/api/products/${encodeURIComponent(productId)}/images`,
+    apiUrl(`/api/products/${encodeURIComponent(productId)}/images`),
     { signal },
   )
   if (!response.ok) throw new HttpRequestError(response.status)
@@ -76,7 +77,7 @@ async function fetchProductImages(productId: string, signal: AbortSignal) {
 
 async function fetchProductDetail(productId: string, signal: AbortSignal) {
   const response = await fetch(
-    `/api/products/${encodeURIComponent(productId)}`,
+    apiUrl(`/api/products/${encodeURIComponent(productId)}`),
     { signal },
   )
   if (!response.ok) throw new HttpRequestError(response.status)

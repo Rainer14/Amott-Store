@@ -11,6 +11,7 @@ import {
   getUserFacingError,
   HttpRequestError,
 } from '../lib/userFacingError'
+import { apiUrl } from '../lib/api'
 
 interface ApiPayload {
   [key: string]: unknown
@@ -88,7 +89,7 @@ async function requestApi(
   }
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
 
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers,
     credentials: 'include',

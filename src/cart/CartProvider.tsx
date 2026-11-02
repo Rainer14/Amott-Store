@@ -18,6 +18,7 @@ import {
   getUserFacingError,
   HttpRequestError,
 } from '../lib/userFacingError'
+import { apiUrl } from '../lib/api'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -66,7 +67,7 @@ async function cartRequest(
   if (init.body) headers.set('Content-Type', 'application/json')
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
 
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...init,
     headers,
     credentials: 'include',

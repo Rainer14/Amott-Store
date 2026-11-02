@@ -1,4 +1,5 @@
 import type { Category, Product } from '../types'
+import { apiUrl } from '../lib/api'
 
 interface ApiProduct {
   id: string
@@ -139,7 +140,7 @@ export async function fetchProductsPage(
   const params = new URLSearchParams({ page: String(page) })
   if (searchQuery?.trim()) params.set('search', searchQuery.trim())
 
-  const response = await fetch(`/api/products?${params}`, { signal })
+  const response = await fetch(apiUrl(`/api/products?${params}`), { signal })
   if (!response.ok) {
     throw new Error(`La API respondió con estado ${response.status}.`)
   }
