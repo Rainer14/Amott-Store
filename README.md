@@ -16,7 +16,7 @@ npm ci
 npm run dev
 ```
 
-Vite proxifica las peticiones `/api` a `http://localhost:3001`. Para apuntar a otra API, define `VITE_API_BASE_URL` en el entorno de compilación con el origen público de la API, sin añadir `/api` al final.
+Vite proxifica las peticiones `/api` a `http://localhost:3001`. Para apuntar a otra API, define `VITE_API_BASE_URL` en el entorno de compilación con el origen público o la ruta base de la API (por ejemplo, `https://api.ejemplo.com/api/`).
 
 ## Scripts
 
@@ -39,7 +39,7 @@ Para desplegar:
 
 1. Sube el repositorio a GitHub y en Render crea un **Blueprint** desde ese repositorio, o crea manualmente un Static Site con los valores anteriores.
 2. Despliega el frontend. Mientras no haya una API publicada, la interfaz estará disponible pero las funciones que cargan o modifican datos no funcionarán.
-3. Cuando la API esté publicada, define `VITE_API_BASE_URL` en la configuración de entorno de build de Render como su origen HTTPS (por ejemplo, `https://api.ejemplo.com`, sin `/api` al final) y vuelve a desplegar.
+3. `render.yaml` configura `VITE_API_BASE_URL` para el backend publicado. Si creaste el Static Site manualmente, añade esa variable de entorno con la URL base de la API y vuelve a desplegar.
 
 `VITE_API_BASE_URL` es pública porque se incorpora al bundle del navegador. No guardes secretos en variables `VITE_*`.
 

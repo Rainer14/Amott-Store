@@ -4,6 +4,9 @@ services:
     runtime: static
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://ecommerce-api-7tcq.onrender.com/api/
     routes:
       - type: rewrite
         source: /*
