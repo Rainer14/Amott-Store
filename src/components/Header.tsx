@@ -85,6 +85,48 @@ export function Header() {
           <Link to="/nosotros#casa" onClick={closeMenu}>
             Nuestra tienda
           </Link>
+          {!authLoading && (
+            <div className="site-nav__account">
+              {customer ? (
+                <>
+                  <Link
+                    className="header-account-link"
+                    to="/cuenta"
+                    onClick={closeMenu}
+                  >
+                    Mi cuenta
+                  </Link>
+                  <button
+                    type="button"
+                    className="header-account-link header-account-link--button"
+                    onClick={() => {
+                      closeMenu()
+                      void handleLogout()
+                    }}
+                  >
+                    Salir
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    className="header-account-link"
+                    to="/iniciar-sesion"
+                    onClick={closeMenu}
+                  >
+                    Iniciar sesión
+                  </Link>
+                  <Link
+                    className="header-register-link"
+                    to="/registro"
+                    onClick={closeMenu}
+                  >
+                    Registrarse
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
         </nav>
 
         <div className="site-header__actions">
@@ -93,9 +135,17 @@ export function Header() {
             className="menu-toggle"
             aria-expanded={menuOpen}
             aria-controls="menu-principal"
+            aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
             onClick={() => setMenuOpen((current) => !current)}
           >
-            {menuOpen ? 'Cerrar' : 'Menú'}
+            <span
+              className={`menu-toggle__icon${menuOpen ? ' menu-toggle__icon--open' : ''}`}
+              aria-hidden="true"
+            >
+              <span />
+              <span />
+              <span />
+            </span>
           </button>
           {!authLoading &&
             (customer ? (

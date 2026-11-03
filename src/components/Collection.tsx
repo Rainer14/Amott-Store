@@ -108,7 +108,9 @@ export function Collection() {
     catalogSnapshot?.maxPrice ?? null,
   )
   const [filtersExpanded, setFiltersExpanded] = useState(
-    catalogSnapshot?.filtersExpanded ?? true,
+    catalogSnapshot?.filtersExpanded ??
+      (typeof window === 'undefined' ||
+      !window.matchMedia('(max-width: 560px)').matches),
   )
   const restoredScroll = useRef(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)

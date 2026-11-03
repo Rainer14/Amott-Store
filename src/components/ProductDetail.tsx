@@ -291,6 +291,8 @@ export function ProductDetail() {
   }
 
   const currentImage = images[selectedImage]
+  const description =
+    product.fullDescription?.trim() || product.description.trim()
 
   return (
     <div className="product-detail-page">
@@ -407,11 +409,9 @@ export function ProductDetail() {
             <h1>{product.name}</h1>
             <p className="product-detail__sku">SKU {product.sku}</p>
             <p className="product-detail__price">{formatPrice(product.price)}</p>
-            <p className="product-detail__description">
-              {product.fullDescription ||
-                product.description ||
-                'No hay una descripción adicional disponible para este producto.'}
-            </p>
+            {description && (
+              <p className="product-detail__description">{description}</p>
+            )}
 
             <dl className="product-detail__specs">
               <div>

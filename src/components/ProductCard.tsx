@@ -56,6 +56,7 @@ export function ProductCard({
     returnTo,
     ...(catalogSnapshot ? { catalogSnapshot } : {}),
   }
+  const description = product.description.trim()
   const saveReturnPosition = () => {
     if (!catalogSnapshot || location.pathname !== '/') return
     saveCatalogSnapshot({
@@ -110,9 +111,7 @@ export function ProductCard({
             {product.name}
           </Link>
         </h3>
-        <p className="product__blurb">
-          {product.description || 'Sin descripción disponible.'}
-        </p>
+        {description && <p className="product__blurb">{description}</p>}
         <div className="product__meta">
           <span>{product.brand || product.categoryName}</span>
           <span>SKU {product.sku}</span>
