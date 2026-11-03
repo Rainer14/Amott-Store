@@ -961,6 +961,7 @@
   font-weight: 650;
   line-height: 1.05;
   letter-spacing: -0.03em;
+  text-align: center;
 }
 
 .product__blurb {
@@ -2793,6 +2794,12 @@
 
   .product h3 {
     font-size: 0.9rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .product h3 a {
+    overflow-wrap: inherit;
   }
 
   .product__blurb {

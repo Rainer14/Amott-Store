@@ -400,80 +400,6 @@ export function Collection() {
           </p>
         </div>
 
-        <div className="collection-search-wrap">
-          <form
-            className="collection-search"
-            role="search"
-            onSubmit={(event) => event.preventDefault()}
-          >
-            <label className="sr-only" htmlFor="product-search">
-              Buscar productos por nombre, SKU o slug
-            </label>
-            <svg
-              className="collection-search__icon"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <circle
-                cx="10.8"
-                cy="10.8"
-                r="6.3"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              />
-              <path
-                d="m15.5 15.5 4 4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
-            <input
-              id="product-search"
-              type="search"
-              autoComplete="off"
-              value={searchQuery}
-              onChange={(event) =>
-                handleSearchChange(event.currentTarget.value)
-              }
-              placeholder="¿Qué estás buscando?"
-              aria-describedby="product-search-hint"
-            />
-            {searchQuery && (
-              <button
-                className="collection-search__clear"
-                type="button"
-                onClick={clearSearch}
-                aria-label="Limpiar búsqueda"
-                title="Limpiar búsqueda"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <path
-                    d="m7 7 10 10M17 7 7 17"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeWidth="1.8"
-                  />
-                </svg>
-              </button>
-            )}
-            <span
-              className="collection-search__hint"
-              id="product-search-hint"
-            >
-              Nombre, SKU o slug
-            </span>
-          </form>
-        </div>
-
         <p className="sr-only" role="status">
           {!loading && !error
             ? searchIsPending
@@ -570,6 +496,80 @@ export function Collection() {
           </aside>
 
           <div className="collection__products">
+            <div className="collection-search-wrap">
+              <form
+                className="collection-search"
+                role="search"
+                onSubmit={(event) => event.preventDefault()}
+              >
+                <label className="sr-only" htmlFor="product-search">
+                  Buscar productos por nombre, SKU o slug
+                </label>
+                <svg
+                  className="collection-search__icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <circle
+                    cx="10.8"
+                    cy="10.8"
+                    r="6.3"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <path
+                    d="m15.5 15.5 4 4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <input
+                  id="product-search"
+                  type="search"
+                  autoComplete="off"
+                  value={searchQuery}
+                  onChange={(event) =>
+                    handleSearchChange(event.currentTarget.value)
+                  }
+                  placeholder="¿Qué estás buscando?"
+                  aria-describedby="product-search-hint"
+                />
+                {searchQuery && (
+                  <button
+                    className="collection-search__clear"
+                    type="button"
+                    onClick={clearSearch}
+                    aria-label="Limpiar búsqueda"
+                    title="Limpiar búsqueda"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        d="m7 7 10 10M17 7 7 17"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeWidth="1.8"
+                      />
+                    </svg>
+                  </button>
+                )}
+                <span
+                  className="collection-search__hint"
+                  id="product-search-hint"
+                >
+                  Nombre, SKU o slug
+                </span>
+              </form>
+            </div>
+
             <div className="collection__toolbar">
               <p>
                 {searchIsPending
