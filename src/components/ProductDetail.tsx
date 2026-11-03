@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
-import { fetchProductsPage, parseProductDetail } from '../data/products'
+import { fetchProductsPage } from '../data/products'
 import { useProducts } from '../data/ProductsContext'
 import { formatPrice } from '../lib/format'
 import { getUserFacingError, HttpRequestError } from '../lib/userFacingError'
@@ -14,6 +14,9 @@ interface ProductImage {
   url: string
   alt: string
 }
+
+const productImagesCache = new Map<string, ProductImage[]>()
+const productImagesRequests = new Map<string, Promise<ProductImage[]>>()
 
 function isProduct(value: unknown): value is Product {
   if (typeof value !== 'object' || value === null) return false
@@ -66,24 +69,31 @@ function parseImages(payload: unknown): ProductImage[] {
   return images
 }
 
-async function fetchProductImages(productId: string, signal: AbortSignal) {
+async function fetchProductImages(productId: string) {
   const response = await fetch(
     apiUrl(`/api/products/${encodeURIComponent(productId)}/images`),
-    { signal },
   )
   if (!response.ok) throw new HttpRequestError(response.status)
   return parseImages(await response.json())
 }
 
-async function fetchProductDetail(productId: string, signal: AbortSignal) {
-  const response = await fetch(
-    apiUrl(`/api/products/${encodeURIComponent(productId)}`),
-    { signal },
-  )
-  if (!response.ok) throw new HttpRequestError(response.status)
-  const product = parseProductDetail(await response.json())
-  if (!product) throw new Error('Invalid product response')
-  return product
+function loadProductImages(productId: string) {
+  const cachedImages = productImagesCache.get(productId)
+  if (cachedImages) return Promise.resolve(cachedImages)
+
+  const pendingRequest = productImagesRequests.get(productId)
+  if (pendingRequest) return pendingRequest
+
+  const request = fetchProductImages(productId)
+    .then((images) => {
+      productImagesCache.set(productId, images)
+      return images
+    })
+    .finally(() => {
+      productImagesRequests.delete(productId)
+    })
+  productImagesRequests.set(productId, request)
+  return request
 }
 
 function ArrowIcon({ direction }: { direction: 'left' | 'right' }) {
@@ -178,25 +188,17 @@ export function ProductDetail() {
           return
         }
 
-        const detail = await fetchProductDetail(
-          sourceProduct.id,
-          controller.signal,
-        )
-        if (controller.signal.aborted) return
-        setProduct(detail)
+        setProduct(sourceProduct)
         setError(null)
         setNotFound(false)
         setImagesError(null)
 
         try {
-          const extraImages = await fetchProductImages(
-            detail.id,
-            controller.signal,
-          )
+          const extraImages = await loadProductImages(sourceProduct.id)
           if (controller.signal.aborted) return
           const allImages = [
-            ...(detail.imageUrl
-              ? [{ url: detail.imageUrl, alt: detail.name }]
+            ...(sourceProduct.imageUrl
+              ? [{ url: sourceProduct.imageUrl, alt: sourceProduct.name }]
               : []),
             ...extraImages,
           ]
@@ -211,8 +213,8 @@ export function ProductDetail() {
           if (controller.signal.aborted) return
           setImagesError(getUserFacingError(cause, 'catalog'))
           setImages(
-            detail.imageUrl
-              ? [{ url: detail.imageUrl, alt: detail.name }]
+            sourceProduct.imageUrl
+              ? [{ url: sourceProduct.imageUrl, alt: sourceProduct.name }]
               : [],
           )
         }
