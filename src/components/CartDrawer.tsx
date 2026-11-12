@@ -155,6 +155,10 @@ export function CartDrawer() {
 
   const handleCheckout = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!customer?.emailVerified) {
+      setCheckoutError('Verifica tu correo antes de confirmar el pedido.')
+      return
+    }
     setCheckoutError(null)
     setCheckoutSubmitting(true)
     const data = new FormData(event.currentTarget)
@@ -446,6 +450,20 @@ export function CartDrawer() {
                 Los datos se enviarán de forma segura para crear tu pedido.
               </p>
 
+              {!customer?.emailVerified && (
+                <div className="checkout__verification" role="status">
+                  <strong>Confirma tu correo para comprar.</strong>{' '}
+                  Te enviamos un enlace de verificación.{' '}
+                  <Link
+                    to="/verificar-correo"
+                    state={{ email: customer?.email }}
+                    onClick={handleClose}
+                  >
+                    Verificar correo
+                  </Link>
+                </div>
+              )}
+
               {checkoutError && (
                 <p className="cart-action-error" role="alert">
                   {checkoutError}
@@ -512,7 +530,7 @@ export function CartDrawer() {
               <button
                 type="submit"
                 className="button button--solid button--full"
-                disabled={checkoutSubmitting}
+                disabled={checkoutSubmitting || !customer?.emailVerified}
               >
                 {checkoutSubmitting ? 'Procesando…' : 'Confirmar pedido'}
               </button>

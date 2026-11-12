@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { getUserFacingError } from '../lib/userFacingError'
+import {
+  getUserFacingError,
+  HttpRequestError,
+} from '../lib/userFacingError'
 
 export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
   const { customer, loading, error: sessionError, login, register } = useAuth()
@@ -27,12 +30,27 @@ export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
     try {
       if (isRegister) {
         const name = String(formData.get('name') ?? '').trim()
-        await register(name, email, password)
+        const result = await register(name, email, password)
+        navigate('/verificar-correo', {
+          replace: true,
+          state: { email: result.email },
+        })
       } else {
         await login(email, password)
+        navigate(destination, { replace: true })
       }
-      navigate(destination, { replace: true })
     } catch (cause) {
+      if (
+        !isRegister &&
+        cause instanceof HttpRequestError &&
+        cause.code === 'EMAIL_NOT_VERIFIED'
+      ) {
+        navigate('/verificar-correo', {
+          replace: true,
+          state: { email, reason: 'login' },
+        })
+        return
+      }
       setFormError(getUserFacingError(cause, isRegister ? 'register' : 'login'))
     } finally {
       setSubmitting(false)
@@ -217,6 +235,17 @@ export function CustomerAccount() {
         <p className="customer-access__eyebrow">AMOTT · TU CUENTA</p>
         <h1>Hola, {customer.name}.</h1>
         <p className="customer-access__intro">{customer.email}</p>
+        {!customer.emailVerified && (
+          <p
+            className="customer-access__notice customer-account__verification"
+            role="status"
+          >
+            Tu correo todavía no está verificado.{' '}
+            <Link to="/verificar-correo" state={{ email: customer.email }}>
+              Verificar ahora
+            </Link>
+          </p>
+        )}
         {error && (
           <p className="customer-access__error" role="alert">
             {error}

@@ -5,13 +5,14 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Customer } from './AuthContext'
+import type { Customer, RegisterResult } from './AuthContext'
 import { AuthContext } from './AuthContext'
 import {
   getUserFacingError,
   HttpRequestError,
 } from '../lib/userFacingError'
 import { apiUrl } from '../lib/api'
+import { rememberPendingEmail } from './verificationStorage'
 
 interface ApiPayload {
   [key: string]: unknown
@@ -25,6 +26,39 @@ function getNestedRecord(payload: unknown, key: string): ApiPayload | null {
   if (!isRecord(payload)) return null
   const value = payload[key]
   return isRecord(value) ? value : null
+}
+
+function readErrorDetails(payload: unknown) {
+  if (!isRecord(payload)) {
+    return {
+      code: undefined,
+      message:
+        typeof payload === 'string' && payload.trim()
+          ? payload.trim()
+          : undefined,
+    }
+  }
+
+  const data = getNestedRecord(payload, 'data')
+  const error = getNestedRecord(payload, 'error')
+  const code =
+    payload.code ??
+    payload.error_code ??
+    payload.errorCode ??
+    error?.code ??
+    data?.code ??
+    (typeof payload.error === 'string' ? payload.error : undefined)
+  const message =
+    payload.message ??
+    payload.detail ??
+    (typeof payload.error === 'string' ? payload.error : undefined) ??
+    error?.message ??
+    data?.message
+
+  return {
+    code: typeof code === 'string' ? code : undefined,
+    message: typeof message === 'string' ? message : undefined,
+  }
 }
 
 function getAccessToken(payload: unknown): string | null {
@@ -63,6 +97,11 @@ function parseCustomer(payload: unknown): Customer | null {
     customer.full_name ??
     customer.fullName ??
     [firstName, lastName].filter(Boolean).join(' ')
+  const verifiedValue =
+    customer.email_verified ??
+    customer.emailVerified ??
+    customer.is_email_verified ??
+    customer.isEmailVerified
 
   if (
     (typeof id !== 'string' && typeof id !== 'number') ||
@@ -75,6 +114,9 @@ function parseCustomer(payload: unknown): Customer | null {
     id: String(id),
     email,
     name: typeof name === 'string' && name.trim() ? name.trim() : email,
+    // Las APIs anteriores no enviaban este dato; en ese caso asumimos
+    // que la cuenta ya estaba verificada para no bloquear a nadie.
+    emailVerified: typeof verifiedValue === 'boolean' ? verifiedValue : true,
   }
 }
 
@@ -105,7 +147,8 @@ async function requestApi(
   }
 
   if (!response.ok) {
-    throw new HttpRequestError(response.status)
+    const details = readErrorDetails(payload)
+    throw new HttpRequestError(response.status, details.code, details.message)
   }
 
   return payload
@@ -118,6 +161,12 @@ async function loadCustomer(accessToken: string | null) {
     throw new Error('La API devolvió un perfil de cliente inválido.')
   }
   return customer
+}
+
+function assertEmailVerified(customer: Customer) {
+  if (!customer.emailVerified) {
+    throw new HttpRequestError(403, 'EMAIL_NOT_VERIFIED')
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -165,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const profile = await loadCustomer(token)
+        assertEmailVerified(profile)
         setAccessToken(token)
         setCustomer(profile)
         setError(null)
@@ -176,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ) {
           throw cause
         }
+        if (cause.code === 'EMAIL_NOT_VERIFIED') throw cause
         const loginPayload = await requestApi(
           '/api/customer-auth/login',
           {
@@ -188,6 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const profile = await loadCustomer(token)
+      assertEmailVerified(profile)
       setAccessToken(token)
       setCustomer(profile)
       setError(null)
@@ -205,6 +257,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = parseCustomer(payload)
 
       if (token && profile) {
+        assertEmailVerified(profile)
         setAccessToken(token)
         setCustomer(profile)
         setError(null)
@@ -217,15 +270,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const register = useCallback(
-    async (name: string, email: string, password: string) => {
+    async (
+      name: string,
+      email: string,
+      password: string,
+    ): Promise<RegisterResult> => {
+      const normalizedEmail = email.trim()
       const payload = await requestApi('/api/customer-auth/register', {
         method: 'POST',
-        body: JSON.stringify({ full_name: name, email, password }),
+        body: JSON.stringify({
+          full_name: name.trim(),
+          email: normalizedEmail,
+          password,
+        }),
       })
-      await completeSession(payload, email, password)
+
+      // La API nueva no abre sesión hasta verificar el correo. Si una
+      // versión anterior todavía la abre, la cerramos en segundo plano.
+      try {
+        await requestApi(
+          '/api/customer-auth/logout',
+          { method: 'POST' },
+          getAccessToken(payload),
+        )
+      } catch {
+        // El cierre de sesión es best-effort y no debe bloquear el registro.
+      }
+
+      setAccessToken(null)
+      setCustomer(null)
+      setError(null)
+      rememberPendingEmail(normalizedEmail)
+      return { email: normalizedEmail }
     },
-    [completeSession],
+    [],
   )
+
+  const verifyEmail = useCallback(
+    async (token: string) => {
+      const value = token.trim()
+      if (!value) throw new HttpRequestError(400, 'INVALID_TOKEN')
+
+      await requestApi('/api/customer-auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ token: value }),
+      })
+
+      if (!customer) return
+
+      try {
+        const profile = await loadCustomer(accessToken)
+        setCustomer(profile)
+        setError(null)
+      } catch {
+        // La verificación ya se completó; un fallo al refrescar el perfil
+        // no debe invalidarla.
+      }
+    },
+    [accessToken, customer],
+  )
+
+  const resendVerification = useCallback(async (email: string) => {
+    const value = email.trim()
+    if (!value) throw new HttpRequestError(422, 'VALIDATION_ERROR')
+
+    await requestApi('/api/customer-auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email: value }),
+    })
+  }, [])
 
   const logout = useCallback(async () => {
     const activeToken = accessToken
@@ -240,8 +353,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken])
 
   const value = useMemo(
-    () => ({ customer, accessToken, loading, error, login, register, logout }),
-    [accessToken, customer, error, loading, login, logout, register],
+    () => ({
+      customer,
+      accessToken,
+      loading,
+      error,
+      login,
+      register,
+      verifyEmail,
+      resendVerification,
+      logout,
+    }),
+    [
+      accessToken,
+      customer,
+      error,
+      loading,
+      login,
+      logout,
+      register,
+      resendVerification,
+      verifyEmail,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

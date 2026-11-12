@@ -4,6 +4,11 @@ export interface Customer {
   id: string
   email: string
   name: string
+  emailVerified: boolean
+}
+
+export interface RegisterResult {
+  email: string
 }
 
 export interface AuthContextValue {
@@ -12,7 +17,13 @@ export interface AuthContextValue {
   loading: boolean
   error: string | null
   login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
+  register: (
+    name: string,
+    email: string,
+    password: string,
+  ) => Promise<RegisterResult>
+  verifyEmail: (token: string) => Promise<void>
+  resendVerification: (email: string) => Promise<void>
   logout: () => Promise<void>
 }
 

@@ -12,6 +12,10 @@ import { CartToast } from './components/CartToast'
 import { Collection } from './components/Collection'
 import { BuyingGuide } from './components/BuyingGuide'
 import { CustomerAccess, CustomerAccount } from './components/CustomerAccess'
+import {
+  EmailVerification,
+  EmailVerificationNotice,
+} from './components/EmailVerification'
 import { ProductDetail } from './components/ProductDetail'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
@@ -70,6 +74,14 @@ function App() {
               <Route
                 path="/registro"
                 element={<CustomerAccess mode="register" />}
+              />
+              <Route
+                path="/verificar-correo"
+                element={<EmailVerificationNotice />}
+              />
+              <Route
+                path="/verificar-correo/verificar"
+                element={<EmailVerification />}
               />
               <Route path="/cuenta" element={<CustomerAccount />} />
               <Route path="*" element={<Navigate to="/" replace />} />

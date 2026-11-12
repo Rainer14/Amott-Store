@@ -6,14 +6,20 @@ export type UserErrorContext =
   | 'cart'
   | 'checkout'
   | 'catalog'
+  | 'verifyEmail'
+  | 'resendVerification'
 
 export class HttpRequestError extends Error {
   readonly status: number
+  readonly code?: string
+  readonly serverMessage?: string
 
-  constructor(status: number) {
-    super(`HTTP ${status}`)
+  constructor(status: number, code?: string, serverMessage?: string) {
+    super(serverMessage || `HTTP ${status}`)
     this.name = 'HttpRequestError'
     this.status = status
+    this.code = code
+    this.serverMessage = serverMessage
   }
 }
 
@@ -25,6 +31,9 @@ const fallbackMessages: Record<UserErrorContext, string> = {
   cart: 'No pudimos actualizar tu carrito. Inténtalo nuevamente.',
   checkout: 'No pudimos procesar tu compra. Inténtalo nuevamente.',
   catalog: 'No pudimos cargar el catálogo. Inténtalo nuevamente.',
+  verifyEmail: 'No pudimos verificar tu correo. Inténtalo nuevamente.',
+  resendVerification:
+    'No pudimos enviar el correo de verificación. Inténtalo nuevamente.',
 }
 
 export function getUserFacingError(
@@ -33,6 +42,38 @@ export function getUserFacingError(
 ): string {
   if (!(cause instanceof HttpRequestError)) {
     return fallbackMessages[context]
+  }
+
+  if (cause.code === 'EMAIL_NOT_VERIFIED') {
+    return 'Tu correo todavía no está verificado. Revisa tu bandeja de entrada o solicita un nuevo enlace.'
+  }
+
+  if (context === 'verifyEmail') {
+    if (
+      cause.code === 'TOKEN_EXPIRED' ||
+      cause.code === 'TOKEN_INVALID' ||
+      cause.code === 'INVALID_TOKEN' ||
+      cause.status === 400 ||
+      cause.status === 404 ||
+      cause.status === 410
+    ) {
+      return 'El enlace no es válido o ya expiró. Solicita uno nuevo.'
+    }
+    if (cause.status === 429 || cause.code === 'RATE_LIMITED') {
+      return 'Hiciste varios intentos seguidos. Espera un momento antes de volver a intentarlo.'
+    }
+    return fallbackMessages.verifyEmail
+  }
+
+  if (context === 'resendVerification') {
+    if (cause.status === 429 || cause.code === 'RATE_LIMITED') {
+      return 'Pediste un correo hace poco. Espera un momento antes de solicitar otro.'
+    }
+    return fallbackMessages.resendVerification
+  }
+
+  if (context === 'register' && cause.code === 'EMAIL_TAKEN') {
+    return 'Ya existe una cuenta con ese correo. Inicia sesión o usa otro correo.'
   }
 
   if (cause.status === 401) {

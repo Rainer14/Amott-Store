@@ -4,10 +4,13 @@ services:
     runtime: static
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: https://ecommerce-api-7tcq.onrender.com/api/
+    # Sin VITE_API_BASE_URL: la SPA llama a /api en su propio origen y Render
+    # reescribe esa ruta al backend. Asi la cookie de sesion es first-party y
+    # funciona aunque API y frontend sean servicios/dominios distintos.
     routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://ecommerce-api-7tcq.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html
