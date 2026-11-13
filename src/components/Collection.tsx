@@ -1,82 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
-import { fetchProductsPage } from '../data/products'
 import { useProducts } from '../data/ProductsContext'
-import type { CategoryFilter, Product } from '../types'
+import type { CategoryFilter } from '../types'
 import {
   clearCatalogSnapshot,
   readCatalogSnapshot,
 } from '../lib/catalogNavigation'
 import { formatPrice } from '../lib/format'
-import { getUserFacingError } from '../lib/userFacingError'
 import { ProductCard } from './ProductCard'
-
-function normalizeSearchText(value: string) {
-  return value
-    .toLocaleLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ')
-}
-
-function matchesSearch(product: Product, query: string) {
-  return [product.name, product.sku, product.slug].some((value) =>
-    normalizeSearchText(value).includes(query),
-  )
-}
-
-async function fetchCatalogSearchPage(
-  page: number,
-  signal: AbortSignal,
-  query: string,
-) {
-  const isSlugQuery = /[-_]/.test(query)
-  const words = query
-    .replace(/[-_]+/g, ' ')
-    .trim()
-    .split(/\s+/)
-  const usePrefixFallback = query.length > 48 || words.length > 6
-  const fallbackSearchTerm = usePrefixFallback
-    ? words.slice(0, 3).join(' ')
-    : words.join(' ')
-  const fetchFilteredFallback = async () => {
-    const fallback = await fetchProductsPage(
-      page,
-      signal,
-      fallbackSearchTerm,
-    )
-    return {
-      ...fallback,
-      products: fallback.products.filter((product) =>
-        matchesSearch(product, normalizeSearchText(query)),
-      ),
-      searchTerm: fallbackSearchTerm,
-      filteredFallback: true,
-    }
-  }
-
-  if (usePrefixFallback) {
-    return fetchFilteredFallback()
-  }
-
-  if (!isSlugQuery) {
-    const result = await fetchProductsPage(page, signal, query)
-    return { ...result, searchTerm: query, filteredFallback: false }
-  }
-
-  try {
-    const result = await fetchProductsPage(page, signal, query)
-    if (result.products.length > 0) {
-      return { ...result, searchTerm: query, filteredFallback: false }
-    }
-  } catch (cause) {
-    if (signal.aborted) throw cause
-  }
-
-  return fetchFilteredFallback()
-}
 
 export function Collection() {
   const location = useLocation()
@@ -84,20 +15,7 @@ export function Collection() {
   const [catalogSnapshot] = useState(() => readCatalogSnapshot(returnTo))
   const [searchParams, setSearchParams] = useSearchParams()
   const searchQuery = searchParams.get('q') ?? ''
-  const normalizedSearch = normalizeSearchText(searchQuery)
-  const [searchResults, setSearchResults] = useState<Product[]>([])
-  const [searchResultQuery, setSearchResultQuery] = useState('')
-  const [searchApiQuery, setSearchApiQuery] = useState('')
-  const [searchUsesFilteredFallback, setSearchUsesFilteredFallback] =
-    useState(false)
-  const [searchLoadingQuery, setSearchLoadingQuery] = useState('')
-  const [searchError, setSearchError] = useState<string | null>(null)
-  const [searchErrorQuery, setSearchErrorQuery] = useState('')
-  const [searchHasMore, setSearchHasMore] = useState(false)
-  const [searchPage, setSearchPage] = useState(0)
-  const [searchTotal, setSearchTotal] = useState(0)
-  const [searchLoadingMore, setSearchLoadingMore] = useState(false)
-  const [searchMoreError, setSearchMoreError] = useState<string | null>(null)
+  const trimmedSearch = searchQuery.trim()
   const [filter, setFilter] = useState<CategoryFilter>(
     catalogSnapshot?.filter ?? 'todo',
   )
@@ -112,13 +30,13 @@ export function Collection() {
       (typeof window === 'undefined' ||
       !window.matchMedia('(max-width: 560px)').matches),
   )
+  const autoLoadArmed = useRef(true)
   const restoredScroll = useRef(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
-  const searchControllerRef = useRef<AbortController | null>(null)
-  const searchMoreInFlight = useRef(false)
   const {
     products,
     categories,
+    categoryCounts,
     loading,
     loadingMore,
     error,
@@ -126,120 +44,30 @@ export function Collection() {
     hasMore,
     totalProducts,
     loadMore,
+    query,
+    setQuery,
+    setCategoryId,
+    isPending,
   } = useProducts()
+  const activeFilter =
+    filter === 'todo' ||
+    categories.length <= 1 ||
+    categories.some((category) => category.id === filter)
+      ? filter
+      : 'todo'
+
+  // La URL es la fuente de la busqueda (permite compartir enlaces y usar el
+  // historial); el contexto aplica el retardo antes de consultar la API.
+  useEffect(() => {
+    setQuery(searchQuery)
+  }, [searchQuery, setQuery])
 
   useEffect(() => {
-    if (!normalizedSearch) {
-      searchControllerRef.current?.abort()
-      return
-    }
-
-    const controller = new AbortController()
-    searchControllerRef.current = controller
-    const timeout = window.setTimeout(() => {
-      setSearchLoadingQuery(normalizedSearch)
-      setSearchError(null)
-      setSearchMoreError(null)
-
-      void fetchCatalogSearchPage(1, controller.signal, searchQuery)
-        .then((result) => {
-          if (controller.signal.aborted) return
-          setSearchResults(result.products)
-          setSearchResultQuery(normalizedSearch)
-          setSearchApiQuery(result.searchTerm)
-          setSearchUsesFilteredFallback(result.filteredFallback)
-          setSearchPage(result.page)
-          setSearchHasMore(result.page < result.totalPages)
-          setSearchTotal(result.total)
-          setSearchErrorQuery('')
-          setSearchLoadingQuery('')
-        })
-        .catch((cause: unknown) => {
-          if (controller.signal.aborted) return
-          setSearchError(getUserFacingError(cause, 'catalog'))
-          setSearchErrorQuery(normalizedSearch)
-          setSearchLoadingQuery('')
-        })
-    }, 220)
-
-    return () => {
-      window.clearTimeout(timeout)
-      controller.abort()
-      if (searchControllerRef.current === controller) {
-        searchControllerRef.current = null
-      }
-    }
-  }, [normalizedSearch, searchQuery])
-
-  const loadMoreSearchResults = useCallback(async () => {
-    const controller = searchControllerRef.current
-    if (
-      !normalizedSearch ||
-      searchResultQuery !== normalizedSearch ||
-      !searchHasMore ||
-      !controller ||
-      controller.signal.aborted ||
-      searchMoreInFlight.current
-    ) {
-      return
-    }
-
-    searchMoreInFlight.current = true
-    setSearchLoadingMore(true)
-    setSearchMoreError(null)
-
-    try {
-      const result = await fetchProductsPage(
-        searchPage + 1,
-        controller.signal,
-        searchApiQuery,
-      )
-      if (controller.signal.aborted) return
-
-      setSearchResults((current) => {
-        const currentIds = new Set(current.map((product) => product.id))
-        const nextProducts = searchUsesFilteredFallback
-          ? result.products.filter((product) =>
-              matchesSearch(product, normalizedSearch),
-            )
-          : result.products
-        return [
-          ...current,
-          ...nextProducts.filter((product) => !currentIds.has(product.id)),
-        ]
-      })
-      setSearchPage(result.page)
-      setSearchHasMore(result.page < result.totalPages)
-      setSearchTotal(result.total)
-    } catch (cause) {
-      if (controller.signal.aborted) return
-      setSearchMoreError(getUserFacingError(cause, 'catalog'))
-    } finally {
-      searchMoreInFlight.current = false
-      if (!controller.signal.aborted) setSearchLoadingMore(false)
-    }
-  }, [
-    normalizedSearch,
-    searchApiQuery,
-    searchHasMore,
-    searchPage,
-    searchResultQuery,
-    searchUsesFilteredFallback,
-  ])
-
-  const searchIsPending =
-    Boolean(normalizedSearch) &&
-    searchErrorQuery !== normalizedSearch &&
-    (searchResultQuery !== normalizedSearch ||
-      searchLoadingQuery === normalizedSearch)
+    setCategoryId(activeFilter)
+  }, [activeFilter, setCategoryId])
 
   useEffect(() => {
-    if (
-      !catalogSnapshot ||
-      restoredScroll.current ||
-      loading ||
-      searchIsPending
-    ) {
+    if (!catalogSnapshot || restoredScroll.current || loading || isPending) {
       return
     }
 
@@ -249,118 +77,83 @@ export function Collection() {
       restoredScroll.current = true
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [catalogSnapshot, loading, searchIsPending])
-  const searchHasNextPage =
-    normalizedSearch && searchResultQuery === normalizedSearch
-      ? searchHasMore
-      : false
-  const isLoadingMore =
-    normalizedSearch && searchResultQuery === normalizedSearch
-      ? searchLoadingMore
-      : loadingMore
-  const currentLoadMoreError =
-    normalizedSearch && searchResultQuery === normalizedSearch
-      ? searchMoreError
-      : loadMoreError
+  }, [catalogSnapshot, loading, isPending])
 
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (
       !sentinel ||
       loading ||
-      isLoadingMore ||
+      loadingMore ||
+      isPending ||
       error ||
-      currentLoadMoreError ||
-      (normalizedSearch ? !searchHasNextPage : !hasMore)
+      loadMoreError ||
+      !hasMore
     ) {
       return
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          if (normalizedSearch) {
-            void loadMoreSearchResults()
-          } else {
-            void loadMore()
-          }
+        const [entry] = entries
+        if (!entry) return
+
+        if (!entry.isIntersecting) {
+          autoLoadArmed.current = true
+          return
         }
+
+        if (!autoLoadArmed.current) return
+        autoLoadArmed.current = false
+        void loadMore()
       },
-      { rootMargin: '700px 0px' },
+      { rootMargin: '120px 0px' },
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
   }, [
-    currentLoadMoreError,
     error,
     hasMore,
-    isLoadingMore,
+    isPending,
     loadMore,
-    loadMoreSearchResults,
+    loadMoreError,
     loading,
-    normalizedSearch,
-    searchHasNextPage,
+    loadingMore,
   ])
 
-  const currentProducts = useMemo(() => {
-    if (!normalizedSearch) return products
-    const results = new Map(
-      [...products, ...searchResults]
-        .filter((product) => matchesSearch(product, normalizedSearch))
-        .map((product) => [product.id, product]),
-    )
-    if (searchResultQuery === normalizedSearch) {
-      for (const product of searchResults) {
-        results.set(product.id, product)
-      }
-    }
-    return Array.from(results.values())
-  }, [normalizedSearch, products, searchResultQuery, searchResults])
   const priceLimit = useMemo(
-    () => Math.max(1, ...currentProducts.map((product) => product.price)),
-    [currentProducts],
+    () => Math.max(1, ...products.map((product) => product.price)),
+    [products],
   )
   const brands = useMemo(
     () =>
       Array.from(
         new Set(
-          currentProducts
+          products
             .map((product) => product.brand?.trim())
             .filter((brand): brand is string => Boolean(brand)),
         ),
       ).sort((left, right) => left.localeCompare(right)),
-    [currentProducts],
+    [products],
   )
   const visibleProducts = useMemo(
     () =>
-      currentProducts.filter((product) => {
-        const matchesCategory =
-          filter === 'todo' || product.category === filter
+      products.filter((product) => {
         const matchesBrand =
           selectedBrands.length === 0 ||
           (product.brand !== null &&
             selectedBrands.includes(product.brand.trim()))
         const matchesPrice = maxPrice === null || product.price <= maxPrice
-        return (
-          matchesCategory && matchesBrand && matchesPrice
-        )
+        return matchesBrand && matchesPrice
       }),
-    [currentProducts, filter, maxPrice, selectedBrands],
-  )
-  const categoryCounts = useMemo(
-    () =>
-      categories.reduce<Record<string, number>>((counts, category) => {
-        counts[category.id] =
-          category.id === 'todo'
-            ? currentProducts.length
-            : currentProducts.filter((product) => product.category === category.id)
-                .length
-        return counts
-      }, {}),
-    [categories, currentProducts],
+    [maxPrice, products, selectedBrands],
   )
   const hasActiveFilters =
-    filter !== 'todo' || selectedBrands.length > 0 || maxPrice !== null
+    activeFilter !== 'todo' || selectedBrands.length > 0 || maxPrice !== null
+  const catalogSnapshotData = useMemo(
+    () => ({ filter: activeFilter, selectedBrands, maxPrice, filtersExpanded }),
+    [activeFilter, selectedBrands, maxPrice, filtersExpanded],
+  )
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands((current) =>
@@ -377,6 +170,7 @@ export function Collection() {
   }
 
   const handleSearchChange = (value: string) => {
+    setQuery(value)
     const nextParams = new URLSearchParams(searchParams)
     if (value) {
       nextParams.set('q', value)
@@ -387,6 +181,13 @@ export function Collection() {
   }
 
   const clearSearch = () => handleSearchChange('')
+
+  const noResults =
+    !isPending &&
+    !error &&
+    visibleProducts.length === 0 &&
+    !hasMore &&
+    !loadingMore
 
   return (
     <section className="collection" id="tienda">
@@ -401,10 +202,8 @@ export function Collection() {
         </div>
 
         <p className="sr-only" role="status">
-          {!loading && !error
-            ? searchIsPending
-              ? 'Buscando productos…'
-              : `${visibleProducts.length} ${visibleProducts.length === 1 ? 'producto encontrado' : 'productos encontrados'}.`
+          {!isPending && !error
+            ? `${visibleProducts.length} ${visibleProducts.length === 1 ? 'producto encontrado' : 'productos encontrados'}.`
             : ''}
         </p>
 
@@ -431,9 +230,9 @@ export function Collection() {
                     {categories.map((category) => (
                       <button
                         type="button"
-                        aria-pressed={filter === category.id}
+                        aria-pressed={activeFilter === category.id}
                         key={category.id}
-                        className={`filter-option${filter === category.id ? ' filter-option--active' : ''}`}
+                        className={`filter-option${activeFilter === category.id ? ' filter-option--active' : ''}`}
                         onClick={() => setFilter(category.id)}
                       >
                         <span>{category.label}</span>
@@ -503,7 +302,7 @@ export function Collection() {
                 onSubmit={(event) => event.preventDefault()}
               >
                 <label className="sr-only" htmlFor="product-search">
-                  Buscar productos por nombre, SKU o slug
+                  Buscar productos por nombre, SKU o marca
                 </label>
                 <svg
                   className="collection-search__icon"
@@ -531,14 +330,14 @@ export function Collection() {
                   id="product-search"
                   type="search"
                   autoComplete="off"
-                  value={searchQuery}
+                  value={query}
                   onChange={(event) =>
                     handleSearchChange(event.currentTarget.value)
                   }
                   placeholder="¿Qué estás buscando?"
                   aria-describedby="product-search-hint"
                 />
-                {searchQuery && (
+                {query && (
                   <button
                     className="collection-search__clear"
                     type="button"
@@ -565,32 +364,26 @@ export function Collection() {
                   className="collection-search__hint"
                   id="product-search-hint"
                 >
-                  Nombre, SKU o slug
+                  Nombre, SKU o marca
                 </span>
               </form>
             </div>
 
             <div className="collection__toolbar">
               <p>
-                {searchIsPending
-                  ? 'Buscando productos…'
-                  : loading
-                  ? 'Cargando productos…'
+                {isPending
+                  ? trimmedSearch
+                    ? 'Buscando productos…'
+                    : 'Cargando productos…'
                   : error
                     ? 'Productos no disponibles'
-                  : normalizedSearch
-                    ? `${visibleProducts.length} ${visibleProducts.length === 1 ? 'resultado' : 'resultados'}`
-                    : `${visibleProducts.length} ${visibleProducts.length === 1 ? 'producto' : 'productos'}`}
+                    : trimmedSearch
+                      ? `${visibleProducts.length} ${visibleProducts.length === 1 ? 'resultado' : 'resultados'}`
+                      : `${visibleProducts.length} ${visibleProducts.length === 1 ? 'producto' : 'productos'}`}
               </p>
-              {!loading && !error && (
+              {!isPending && !error && (
                 <span className="collection__progress">
-                  {normalizedSearch
-                    ? searchResultQuery === normalizedSearch
-                      ? searchUsesFilteredFallback
-                        ? `${searchResults.length} ${searchResults.length === 1 ? 'coincidencia cargada' : 'coincidencias cargadas'}`
-                        : `${searchResults.length} de ${searchTotal} ${searchTotal === 1 ? 'resultado' : 'resultados'}`
-                      : `${currentProducts.length} resultados locales`
-                    : `${products.length} de ${totalProducts} cargados`}
+                  {products.length} de {totalProducts} cargados
                 </span>
               )}
               {hasActiveFilters && (
@@ -604,25 +397,14 @@ export function Collection() {
               )}
             </div>
 
-            {loading && <p className="collection__message">Cargando productos…</p>}
             {error && (
               <p className="collection__message" role="alert">
-                No se pudo cargar la tienda. {error}
+                No se pudo cargar el catálogo. {error}
               </p>
             )}
-            {searchError && searchErrorQuery === normalizedSearch && (
-              <p className="collection__message" role="alert">
-                No se pudo completar la búsqueda en el catálogo. {searchError}
-              </p>
-            )}
-            {!searchIsPending &&
-              !loading &&
-              !error &&
-              visibleProducts.length === 0 &&
-              !searchHasNextPage &&
-              !searchLoadingMore && (
+            {noResults && (
               <p className="collection__message">
-                {searchQuery
+                {trimmedSearch
                   ? `No encontramos productos que coincidan con “${searchQuery}”.`
                   : 'No hay productos que coincidan con estos filtros.'}
               </p>
@@ -633,33 +415,12 @@ export function Collection() {
                 <ProductCard
                   product={product}
                   key={product.id}
-                  catalogSnapshot={{
-                    filter,
-                    selectedBrands,
-                    maxPrice,
-                    filtersExpanded,
-                  }}
+                  catalogSnapshot={catalogSnapshotData}
                 />
               ))}
-              {isLoadingMore &&
-                Array.from({ length: 3 }, (_, index) => (
-                  <div
-                    className="product-skeleton"
-                    key={`skeleton-${index}`}
-                    aria-hidden="true"
-                  >
-                    <div className="product-skeleton__art" />
-                    <div className="product-skeleton__body">
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
-                ))}
             </div>
 
-            {(normalizedSearch ? searchHasNextPage : hasMore) && (
+            {hasMore && (
               <div
                 className="collection__sentinel"
                 ref={sentinelRef}
@@ -667,25 +428,21 @@ export function Collection() {
               />
             )}
 
-            {isLoadingMore && (
+            {loadingMore && (
               <p className="collection__loading" role="status">
                 <span className="collection__spinner" aria-hidden="true" />
                 Cargando más productos…
               </p>
             )}
-            {currentLoadMoreError && (
+            {loadMoreError && (
               <div className="collection__load-error" role="alert">
                 <p>
-                  No se pudieron cargar más productos. {currentLoadMoreError}
+                  No se pudieron cargar más productos. {loadMoreError}
                 </p>
                 <button
                   type="button"
                   className="collection__clear"
-                  onClick={() =>
-                    normalizedSearch
-                      ? void loadMoreSearchResults()
-                      : void loadMore()
-                  }
+                  onClick={() => void loadMore()}
                 >
                   Reintentar
                 </button>

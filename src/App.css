@@ -579,18 +579,32 @@
 .filter-panel {
   position: sticky;
   top: 152px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 170px);
+  height: calc(100dvh - 170px);
   min-width: 0;
+  overflow: hidden;
   padding-right: 22px;
   border-right: 1px solid rgba(0, 0, 0, 0.18);
 }
 
 .filter-panel__heading {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 17px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.filter-panel__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
 }
 
 .filter-panel__heading h3 {
@@ -798,79 +812,6 @@
   transition:
     border-color 0.25s ease,
     transform 0.25s ease;
-  animation: product-enter 0.42s ease both;
-}
-
-.product:nth-child(3n + 2) {
-  animation-delay: 45ms;
-}
-
-.product:nth-child(3n + 3) {
-  animation-delay: 90ms;
-}
-
-@keyframes product-enter {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.product-skeleton {
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: var(--bone);
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
-}
-
-.product-skeleton__art {
-  aspect-ratio: 5 / 4;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  background:
-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.38), transparent),
-    #f0f1f2;
-  background-size: 200% 100%;
-}
-
-.product-skeleton__body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px 16px;
-}
-
-.product-skeleton__body span {
-  display: block;
-  height: 10px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.product-skeleton__body span:first-child {
-  width: 75%;
-  height: 15px;
-}
-
-.product-skeleton__body span:nth-child(2) {
-  width: 92%;
-}
-
-.product-skeleton__body span:nth-child(3) {
-  width: 56%;
-}
-
-.product-skeleton__body span:last-child {
-  width: 42%;
-  margin-top: 6px;
-}
-
-@keyframes skeleton-pulse {
-  50% {
-    opacity: 0.62;
-  }
 }
 
 .product:hover {
@@ -920,7 +861,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .product,
-  .product-skeleton,
   .collection__spinner {
     animation: none;
   }
@@ -2724,6 +2664,9 @@
 
   .filter-panel {
     position: static;
+    display: block;
+    height: auto;
+    overflow: visible;
     padding-right: 0;
     border-right: 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.18);
@@ -2731,6 +2674,9 @@
 
   .filter-panel__content {
     display: grid;
+    flex: initial;
+    min-height: auto;
+    overflow: visible;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 28px;
   }

@@ -15,7 +15,10 @@ export interface Product {
   sku: string
   slug: string
   name: string
+  /** Slug de la categoria (clases CSS y enlaces). */
   category: string
+  /** UUID de la categoria (filtro del backend). */
+  categoryId: string
   categoryName: string
   price: number
   description: string
@@ -32,4 +35,6 @@ export interface CartLine {
 export interface Category {
   id: string
   label: string
+  /** Productos activos en la categoria (`todo` = catalogo completo). */
+  count: number
 }

@@ -43,7 +43,7 @@ export function CartDrawer() {
     error: cartError,
     refresh,
   } = useCart()
-  const { products } = useProducts()
+  const { findProduct } = useProducts()
   const [step, setStep] = useState<Step>('bag')
   const [order, setOrder] = useState<Order | null>(null)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
@@ -348,9 +348,7 @@ export function CartDrawer() {
               ) : (
                 <ul className="cart-list">
                   {lines.map((line) => {
-                    const product = products.find(
-                      (item) => item.id === line.productId,
-                    )
+                    const product = findProduct(line.productId)
                     if (!product) return null
                     return (
                       <li className="cart-item" key={line.productId}>

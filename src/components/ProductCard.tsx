@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
@@ -16,7 +16,7 @@ interface ProductCardProps {
   catalogReturnTo?: string
 }
 
-export function ProductCard({
+export const ProductCard = memo(function ProductCard({
   product,
   catalogSnapshot,
   catalogReturnTo,
@@ -143,4 +143,4 @@ export function ProductCard({
       </div>
     </article>
   )
-}
+})

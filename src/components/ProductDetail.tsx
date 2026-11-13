@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
-import { fetchProductsPage } from '../data/products'
+import { fetchProductBySlug } from '../data/products'
 import { useProducts } from '../data/ProductsContext'
 import { formatPrice } from '../lib/format'
 import { getUserFacingError, HttpRequestError } from '../lib/userFacingError'
@@ -132,7 +132,11 @@ export function ProductDetail() {
     !navigationState.returnTo.startsWith('//')
       ? navigationState.returnTo
       : '/'
-  const { products, loading: catalogLoading } = useProducts()
+  const {
+    cachedProducts,
+    loading: catalogLoading,
+    rememberProduct,
+  } = useProducts()
   const { customer } = useAuth()
   const { add } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
@@ -146,7 +150,7 @@ export function ProductDetail() {
   const [adding, setAdding] = useState(false)
   const [added, setAdded] = useState(false)
   const recommendationsRef = useRef<HTMLDivElement | null>(null)
-  const catalogProduct = products.find(
+  const catalogProduct = cachedProducts.find(
     (item) => item.slug === slug || item.id === slug,
   )
   const stateProduct =
@@ -173,11 +177,7 @@ export function ProductDetail() {
         let sourceProduct = routedProduct
 
         if (!sourceProduct) {
-          const result = await fetchProductsPage(1, controller.signal, slug)
-          sourceProduct =
-            result.products.find(
-              (item) => item.slug === slug || item.id === slug,
-            ) ?? null
+          sourceProduct = await fetchProductBySlug(slug, controller.signal)
         }
 
         if (controller.signal.aborted) return
@@ -188,6 +188,7 @@ export function ProductDetail() {
           return
         }
 
+        rememberProduct(sourceProduct)
         setProduct(sourceProduct)
         setError(null)
         setNotFound(false)
@@ -228,11 +229,11 @@ export function ProductDetail() {
 
     void loadProduct()
     return () => controller.abort()
-  }, [catalogLoading, location.state, routedProduct, slug])
+  }, [catalogLoading, location.state, rememberProduct, routedProduct, slug])
 
   const recommendedProducts = useMemo(() => {
     if (!product) return []
-    const otherProducts = products.filter((item) => item.id !== product.id)
+    const otherProducts = cachedProducts.filter((item) => item.id !== product.id)
     const sameCategory = otherProducts.filter(
       (item) => item.category === product.category,
     )
@@ -244,7 +245,7 @@ export function ProductDetail() {
       }
     }
     return chosen.slice(0, 12)
-  }, [product, products])
+  }, [product, cachedProducts])
 
   const moveRecommendations = (direction: 'left' | 'right') => {
     recommendationsRef.current?.scrollBy({

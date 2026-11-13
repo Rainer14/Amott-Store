@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { useProducts } from '../data/ProductsContext'
+import { fetchProductById } from '../data/products'
 import type { CartLine } from '../types'
 import {
   CartContext,
@@ -88,16 +89,17 @@ async function cartRequest(
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { customer, accessToken } = useAuth()
-  const { products } = useProducts()
+  const { cachedProducts, findProduct, rememberProduct } = useProducts()
   const [lines, setLines] = useState<CartLine[]>([])
   const [cartOwnerId, setCartOwnerId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isOpenState, setIsOpen] = useState(false)
   const [lastAddedState, setLastAdded] = useState<LastAdded | null>(null)
   const toastTimer = useRef<number | null>(null)
+  const attemptedProducts = useRef(new Set<string>())
   const productsById = useMemo(
-    () => new Map(products.map((product) => [product.id, product])),
-    [products],
+    () => new Map(cachedProducts.map((product) => [product.id, product])),
+    [cachedProducts],
   )
   const cartLines = useMemo(
     () => (customer && cartOwnerId === customer.id ? lines : []),
@@ -130,6 +132,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => controller.abort()
   }, [accessToken, customer])
 
+  // El catalogo se pagina y filtra en el backend: un articulo del carrito
+  // puede no estar en la pagina visible. Se pide su detalle una sola vez.
+  useEffect(() => {
+    if (!customer || cartOwnerId !== customer.id) return
+
+    const missing = lines
+      .map((line) => line.productId)
+      .filter(
+        (productId) =>
+          !productsById.has(productId) &&
+          !attemptedProducts.current.has(productId),
+      )
+    if (missing.length === 0) return
+
+    for (const productId of missing) {
+      attemptedProducts.current.add(productId)
+    }
+    void Promise.allSettled(
+      missing.map(async (productId) => {
+        const product = await fetchProductById(productId)
+        if (product) rememberProduct(product)
+      }),
+    )
+  }, [cartOwnerId, customer, lines, productsById, rememberProduct])
+
   useEffect(
     () => () => {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current)
@@ -140,7 +167,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const add = useCallback(
     async (productId: string) => {
       if (!customer) throw new Error('Inicia sesión para añadir productos.')
-      const product = productsById.get(productId)
+      const product = findProduct(productId)
       if (!product) throw new Error('No se encontró el producto seleccionado.')
 
       const currentQty =
@@ -178,7 +205,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         throw cause
       }
     },
-    [accessToken, cartOwnerId, customer, lines, productsById],
+    [accessToken, cartOwnerId, customer, findProduct, lines],
   )
 
   const remove = useCallback(
