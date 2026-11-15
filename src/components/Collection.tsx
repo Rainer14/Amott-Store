@@ -7,6 +7,7 @@ import {
   readCatalogSnapshot,
 } from '../lib/catalogNavigation'
 import { formatPrice } from '../lib/format'
+import { LoadingState } from './LoadingState'
 import { ProductCard } from './ProductCard'
 
 export function Collection() {
@@ -428,12 +429,7 @@ export function Collection() {
               />
             )}
 
-            {loadingMore && (
-              <p className="collection__loading" role="status">
-                <span className="collection__spinner" aria-hidden="true" />
-                Cargando más productos…
-              </p>
-            )}
+            {loadingMore && <LoadingState label="Cargando más productos…" />}
             {loadMoreError && (
               <div className="collection__load-error" role="alert">
                 <p>

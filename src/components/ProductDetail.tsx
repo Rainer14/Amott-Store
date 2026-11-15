@@ -8,6 +8,7 @@ import { formatPrice } from '../lib/format'
 import { getUserFacingError, HttpRequestError } from '../lib/userFacingError'
 import { apiUrl } from '../lib/api'
 import type { Product } from '../types'
+import { LoadingState } from './LoadingState'
 import { ProductCard } from './ProductCard'
 
 interface ProductImage {
@@ -272,7 +273,7 @@ export function ProductDetail() {
   if (loadedSlug !== slug || catalogLoading) {
     return (
       <section className="product-detail-state" aria-live="polite">
-        <p>Cargando producto…</p>
+        <LoadingState label="Cargando producto…" />
       </section>
     )
   }

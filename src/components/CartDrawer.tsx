@@ -10,6 +10,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
 import { useProducts } from '../data/ProductsContext'
 import { formatPrice } from '../lib/format'
+import { LoadingState } from './LoadingState'
 import {
   getUserFacingError,
   HttpRequestError,
@@ -307,9 +308,7 @@ export function CartDrawer() {
           {step === 'bag' && (
             <>
               {cartLoading ? (
-                <p className="cart-loading" role="status">
-                  Cargando tu carrito…
-                </p>
+                <LoadingState label="Cargando tu carrito…" />
               ) : lines.length === 0 ? (
                 <div className="cart-empty">
                   <svg

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { LoadingState } from './LoadingState'
 import {
   getUserFacingError,
   HttpRequestError,
@@ -68,11 +69,7 @@ export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
             : 'Inicia sesión para acceder a tu carrito y continuar tu compra.'}
         </p>
 
-        {loading && (
-          <p className="customer-access__notice" role="status">
-            Comprobando tu sesión…
-          </p>
-        )}
+        {loading && <LoadingState label="Comprobando tu sesión…" />}
         {sessionError && !formError && (
           <p className="customer-access__error" role="alert">
             {sessionError}
@@ -209,7 +206,7 @@ export function CustomerAccount() {
   if (loading) {
     return (
       <section className="customer-access">
-        <p role="status">Comprobando tu cuenta…</p>
+        <LoadingState label="Comprobando tu cuenta…" />
       </section>
     )
   }

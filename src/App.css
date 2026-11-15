@@ -1027,7 +1027,7 @@
   display: flex;
   min-height: 55vh;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: 18px;
   padding: clamp(48px, 8vw, 100px) var(--gutter);
@@ -2886,4 +2886,127 @@
   .product h3 {
     font-size: 0.78rem;
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Amott � Indicadores de carga (logo)
+ * ------------------------------------------------------------------ */
+.brand-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #fff7ef;
+  box-shadow: 0 10px 20px -12px rgba(200, 68, 31, 0.55);
+}
+
+.brand-mark img {
+  display: block;
+  width: auto;
+  height: 76%;
+  object-fit: contain;
+}
+
+.brand-mark--lg {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+}
+
+.brand-mark--plain {
+  width: auto;
+  height: 20px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.brand-mark--plain img {
+  height: 100%;
+  width: auto;
+}
+
+.brand-mark--pulse {
+  animation: brand-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes brand-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.94);
+    opacity: 0.82;
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 16px;
+  text-align: center;
+}
+
+.loading-state__label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.62);
+}
+
+.loading-state__bar {
+  width: 132px;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+}
+
+.loading-state__bar span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--accent-deep, var(--moss));
+  animation: loading-sweep 1.05s ease infinite;
+}
+
+@keyframes loading-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+.loading-state--inline {
+  flex-direction: row;
+  gap: 10px;
+  padding: 0;
+  text-align: left;
+}
+
+.loading-state--inline .brand-mark--lg {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+}
+
+.loading-state--inline .loading-state__label {
+  font-size: 0.78rem;
+}
+
+.loading-state--inline .loading-state__bar {
+  display: none;
 }
