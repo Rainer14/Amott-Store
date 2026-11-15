@@ -5,6 +5,7 @@ export interface Customer {
   email: string
   name: string
   emailVerified: boolean
+  isWholesale: boolean
 }
 
 export interface RegisterResult {
