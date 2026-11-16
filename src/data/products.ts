@@ -282,10 +282,15 @@ export interface ProductQuery {
   categoryId?: string
 }
 
+function authHeaders(accessToken?: string | null): HeadersInit | undefined {
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
+}
+
 export async function fetchProductsPage(
   page: number,
   signal: AbortSignal,
   query: ProductQuery = {},
+  accessToken?: string | null,
 ) {
   const params = new URLSearchParams({
     page: String(page),
@@ -300,6 +305,7 @@ export async function fetchProductsPage(
   const response = await fetch(apiUrl(`/api/products?${params}`), {
     signal,
     credentials: 'include',
+    headers: authHeaders(accessToken),
   })
   if (!response.ok) {
     throw new Error(`La API respondió con estado ${response.status}.`)
@@ -324,10 +330,14 @@ export async function fetchProductsPage(
  * por `category_id`, de modo que la categoria abarca todo el catalogo y no
  * solo los productos ya descargados.
  */
-export async function fetchCategories(signal: AbortSignal): Promise<Category[]> {
+export async function fetchCategories(
+  signal: AbortSignal,
+  accessToken?: string | null,
+): Promise<Category[]> {
   const response = await fetch(apiUrl('/api/categories'), {
     signal,
     credentials: 'include',
+    headers: authHeaders(accessToken),
   })
   if (!response.ok) {
     throw new Error(`La API respondió con estado ${response.status}.`)
@@ -354,10 +364,11 @@ export async function fetchCategories(signal: AbortSignal): Promise<Category[]> 
 export async function fetchProductById(
   id: string,
   signal?: AbortSignal,
+  accessToken?: string | null,
 ): Promise<Product | null> {
   const response = await fetch(
     apiUrl(`/api/products/${encodeURIComponent(id)}`),
-    { signal, credentials: 'include' },
+    { signal, credentials: 'include', headers: authHeaders(accessToken) },
   )
   if (response.status === 404) return null
   if (!response.ok) {
@@ -370,10 +381,11 @@ export async function fetchProductById(
 export async function fetchProductBySlug(
   slug: string,
   signal?: AbortSignal,
+  accessToken?: string | null,
 ): Promise<Product | null> {
   const response = await fetch(
     apiUrl(`/api/products/slug/${encodeURIComponent(slug)}`),
-    { signal, credentials: 'include' },
+    { signal, credentials: 'include', headers: authHeaders(accessToken) },
   )
   if (response.status === 404) return null
   if (!response.ok) {

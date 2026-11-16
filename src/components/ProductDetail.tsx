@@ -138,7 +138,7 @@ export function ProductDetail() {
     loading: catalogLoading,
     rememberProduct,
   } = useProducts()
-  const { customer } = useAuth()
+  const { customer, accessToken } = useAuth()
   const { add } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [images, setImages] = useState<ProductImage[]>([])
@@ -178,7 +178,11 @@ export function ProductDetail() {
         let sourceProduct = routedProduct
 
         if (!sourceProduct) {
-          sourceProduct = await fetchProductBySlug(slug, controller.signal)
+          sourceProduct = await fetchProductBySlug(
+            slug,
+            controller.signal,
+            accessToken,
+          )
         }
 
         if (controller.signal.aborted) return
@@ -230,7 +234,14 @@ export function ProductDetail() {
 
     void loadProduct()
     return () => controller.abort()
-  }, [catalogLoading, location.state, rememberProduct, routedProduct, slug])
+  }, [
+    accessToken,
+    catalogLoading,
+    location.state,
+    rememberProduct,
+    routedProduct,
+    slug,
+  ])
 
   const recommendedProducts = useMemo(() => {
     if (!product) return []

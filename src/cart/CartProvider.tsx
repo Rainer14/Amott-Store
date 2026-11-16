@@ -151,11 +151,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     void Promise.allSettled(
       missing.map(async (productId) => {
-        const product = await fetchProductById(productId)
+        const product = await fetchProductById(productId, undefined, accessToken)
         if (product) rememberProduct(product)
       }),
     )
-  }, [cartOwnerId, customer, lines, productsById, rememberProduct])
+  }, [accessToken, cartOwnerId, customer, lines, productsById, rememberProduct])
 
   useEffect(
     () => () => {

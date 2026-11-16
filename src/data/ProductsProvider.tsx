@@ -25,7 +25,7 @@ function requestKey(categoryId: string, search: string) {
 }
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
-  const { customer } = useAuth()
+  const { customer, accessToken } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([
     { id: 'todo', label: 'Todo', count: 0 },
@@ -96,7 +96,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   // Categorias del catalogo completo (independientes de la busqueda).
   useEffect(() => {
     const requestController = new AbortController()
-    void fetchCategories(requestController.signal)
+    void fetchCategories(requestController.signal, accessToken)
       .then((result) => {
         if (requestController.signal.aborted) return
         setCategories(result)
@@ -105,7 +105,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         // Sin categorias se mantiene "Todo"; el catalogo sigue funcionando.
       })
     return () => requestController.abort()
-  }, [])
+  }, [accessToken])
 
   // Reinicia el listado cada vez que cambia la busqueda, la categoria o la sesión.
   useEffect(() => {
@@ -126,7 +126,12 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       setLoadMoreError(null)
 
       try {
-        const result = await fetchProductsPage(1, requestController.signal, params)
+        const result = await fetchProductsPage(
+          1,
+          requestController.signal,
+          params,
+          accessToken,
+        )
         if (requestController.signal.aborted) return
 
         setProducts(result.products)
@@ -179,6 +184,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         loadedPage.current + 1,
         activeController.signal,
         activeQuery.current,
+        accessToken,
       )
       if (activeController.signal.aborted) return
 
@@ -201,7 +207,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       requestInFlight.current = false
       if (!activeController.signal.aborted) setLoadingMore(false)
     }
-  }, [rememberMany])
+  }, [accessToken, rememberMany])
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { todo: 0 }
