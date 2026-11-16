@@ -20,7 +20,10 @@ export interface Product {
   /** UUID de la categoria (filtro del backend). */
   categoryId: string
   categoryName: string
+  /** Precio principal (minorista / precio 1). */
   price: number
+  /** Precios adicionales para clientes al por mayor (p. ej. niveles 2 y 3). */
+  wholesalePrices?: number[]
   description: string
   fullDescription?: string
   brand: string | null

@@ -17,6 +17,19 @@ interface ApiProduct {
     slug: string
   }
   price: number
+  /** Precios adicionales para mayoristas (nombres posibles según la API). */
+  wholesale_price?: number | null
+  wholesalePrice?: number | null
+  price_2?: number | null
+  price2?: number | null
+  wholesale_price_2?: number | null
+  wholesalePrice2?: number | null
+  price_3?: number | null
+  price3?: number | null
+  wholesale_price_3?: number | null
+  wholesalePrice3?: number | null
+  wholesale_prices?: unknown
+  wholesalePrices?: unknown
   main_image_url: string | null
 }
 
@@ -25,6 +38,39 @@ interface ApiCategory {
   name: string
   slug: string
   product_count: number
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function readWholesalePrices(item: ApiProduct): number[] {
+  const listValue = item.wholesale_prices ?? item.wholesalePrices
+  if (Array.isArray(listValue)) {
+    const prices = listValue.filter(isFiniteNumber)
+    if (prices.length > 0) return prices
+  }
+
+  const candidates = [
+    item.wholesale_price,
+    item.wholesalePrice,
+    item.price_2,
+    item.price2,
+    item.wholesale_price_2,
+    item.wholesalePrice2,
+    item.price_3,
+    item.price3,
+    item.wholesale_price_3,
+    item.wholesalePrice3,
+  ]
+
+  const prices: number[] = []
+  for (const value of candidates) {
+    if (isFiniteNumber(value) && !prices.includes(value)) {
+      prices.push(value)
+    }
+  }
+  return prices
 }
 
 function isApiProduct(value: unknown): value is ApiProduct {
@@ -77,6 +123,7 @@ function slugifyProductName(name: string) {
 }
 
 function mapApiProduct(item: ApiProduct): Product {
+  const wholesalePrices = readWholesalePrices(item)
   return {
     id: item.id,
     sku: item.sku,
@@ -86,6 +133,7 @@ function mapApiProduct(item: ApiProduct): Product {
     categoryId: item.category.id,
     categoryName: item.category.name,
     price: item.price,
+    ...(wholesalePrices.length > 0 ? { wholesalePrices } : {}),
     description:
       item.short_description?.trim() || item.description?.trim() || '',
     fullDescription: item.description?.trim() || undefined,

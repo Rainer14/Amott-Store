@@ -412,7 +412,22 @@ export function ProductDetail() {
             <p className="product-detail__eyebrow">{product.categoryName}</p>
             <h1>{product.name}</h1>
             <p className="product-detail__sku">SKU {product.sku}</p>
-            <p className="product-detail__price">{formatPrice(product.price)}</p>
+            {customer?.isWholesale && product.wholesalePrices?.length ? (
+              <div className="product-detail__prices" aria-label="Precios">
+                <p className="product-detail__price">
+                  <span className="product-detail__price-label">Precio 1: </span>
+                  {formatPrice(product.price)}
+                </p>
+                {product.wholesalePrices.slice(0, 2).map((value, index) => (
+                  <p className="product-detail__price" key={`${value}-${index}`}>
+                    <span className="product-detail__price-label">{`Precio ${index + 2}: `}</span>
+                    {formatPrice(value)}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p className="product-detail__price">{formatPrice(product.price)}</p>
+            )}
             {description && (
               <p className="product-detail__description">{description}</p>
             )}

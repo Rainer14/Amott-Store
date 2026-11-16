@@ -102,6 +102,11 @@ function parseCustomer(payload: unknown): Customer | null {
     customer.emailVerified ??
     customer.is_email_verified ??
     customer.isEmailVerified
+  const wholesaleValue =
+    customer.is_wholesale ??
+    customer.isWholesale ??
+    customer.wholesale ??
+    customer.mayorista
 
   if (
     (typeof id !== 'string' && typeof id !== 'number') ||
@@ -117,6 +122,7 @@ function parseCustomer(payload: unknown): Customer | null {
     // Las APIs anteriores no enviaban este dato; en ese caso asumimos
     // que la cuenta ya estaba verificada para no bloquear a nadie.
     emailVerified: typeof verifiedValue === 'boolean' ? verifiedValue : true,
+    isWholesale: typeof wholesaleValue === 'boolean' ? wholesaleValue : false,
   }
 }
 

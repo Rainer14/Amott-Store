@@ -117,7 +117,22 @@ export const ProductCard = memo(function ProductCard({
           <span>SKU {product.sku}</span>
         </div>
         <div className="product__foot">
-          <span className="product__price">{formatPrice(product.price)}</span>
+          {customer?.isWholesale && product.wholesalePrices?.length ? (
+            <div className="product__prices" aria-label="Precios">
+              <span className="product__price">
+                <span className="product__price-label">Precio 1</span>
+                {formatPrice(product.price)}
+              </span>
+              {product.wholesalePrices.slice(0, 2).map((value, index) => (
+                <span className="product__price" key={`${value}-${index}`}>
+                  <span className="product__price-label">{`Precio ${index + 2}`}</span>
+                  {formatPrice(value)}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="product__price">{formatPrice(product.price)}</span>
+          )}
           {customer && (
             <button
               type="button"
