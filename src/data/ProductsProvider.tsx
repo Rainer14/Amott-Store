@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useAuth } from '../auth/AuthContext'
 import type { Category, Product } from '../types'
 import { getUserFacingError } from '../lib/userFacingError'
 import { ProductsContext } from './ProductsContext'
@@ -24,6 +25,7 @@ function requestKey(categoryId: string, search: string) {
 }
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
+  const { customer } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([
     { id: 'todo', label: 'Todo', count: 0 },
@@ -38,6 +40,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const [hasMore, setHasMore] = useState(false)
   const [totalProducts, setTotalProducts] = useState(0)
   const [appliedKey, setAppliedKey] = useState('')
+  const authScope = `${customer?.id ?? 'anon'}:${customer?.isWholesale ? 'w' : 'r'}`
 
   const loadedPage = useRef(0)
   const hasMoreRef = useRef(false)
@@ -104,7 +107,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     return () => requestController.abort()
   }, [])
 
-  // Reinicia el listado cada vez que cambia la busqueda o la categoria.
+  // Reinicia el listado cada vez que cambia la busqueda, la categoria o la sesión.
   useEffect(() => {
     const requestController = new AbortController()
     controller.current = requestController
@@ -153,7 +156,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       requestController.abort()
       if (controller.current === requestController) controller.current = null
     }
-  }, [categoryId, debouncedQuery, rememberMany])
+  }, [authScope, categoryId, debouncedQuery, rememberMany])
 
   const loadMore = useCallback(async () => {
     const activeController = controller.current

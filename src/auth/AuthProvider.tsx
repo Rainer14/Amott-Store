@@ -106,13 +106,39 @@ function parseCustomer(payload: unknown): Customer | null {
     customer.is_wholesale ??
     customer.isWholesale ??
     customer.wholesale ??
-    customer.mayorista
+    customer.mayorista ??
+    customer.es_mayorista ??
+    customer.esMayorista ??
+    customer.customer_type ??
+    customer.customerType ??
+    customer.type ??
+    customer.role
 
   if (
     (typeof id !== 'string' && typeof id !== 'number') ||
     typeof email !== 'string'
   ) {
     return null
+  }
+
+  let isWholesale = false
+  if (typeof wholesaleValue === 'boolean') {
+    isWholesale = wholesaleValue
+  } else if (typeof wholesaleValue === 'number') {
+    isWholesale = wholesaleValue === 1
+  } else if (typeof wholesaleValue === 'string') {
+    const normalized = wholesaleValue.trim().toLowerCase()
+    isWholesale = [
+      'true',
+      '1',
+      'yes',
+      'si',
+      'sí',
+      'wholesale',
+      'mayorista',
+      'al por mayor',
+      'mayor',
+    ].includes(normalized)
   }
 
   return {
@@ -122,7 +148,7 @@ function parseCustomer(payload: unknown): Customer | null {
     // Las APIs anteriores no enviaban este dato; en ese caso asumimos
     // que la cuenta ya estaba verificada para no bloquear a nadie.
     emailVerified: typeof verifiedValue === 'boolean' ? verifiedValue : true,
-    isWholesale: typeof wholesaleValue === 'boolean' ? wholesaleValue : false,
+    isWholesale,
   }
 }
 

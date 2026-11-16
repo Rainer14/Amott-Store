@@ -45,13 +45,14 @@ function isFiniteNumber(value: unknown): value is number {
 }
 
 function readWholesalePrices(item: ApiProduct): number[] {
+  const record = item as unknown as Record<string, unknown>
   const listValue = item.wholesale_prices ?? item.wholesalePrices
   if (Array.isArray(listValue)) {
     const prices = listValue.filter(isFiniteNumber)
     if (prices.length > 0) return prices
   }
 
-  const candidates = [
+  const candidates: unknown[] = [
     item.wholesale_price,
     item.wholesalePrice,
     item.price_2,
@@ -62,14 +63,39 @@ function readWholesalePrices(item: ApiProduct): number[] {
     item.price3,
     item.wholesale_price_3,
     item.wholesalePrice3,
+    record.precio_mayorista,
+    record.precioMayorista,
+    record.precio_mayorista_2,
+    record.precioMayorista2,
+    record.precio_mayorista_3,
+    record.precioMayorista3,
+    record.precio2,
+    record.precio_2,
+    record.precio3,
+    record.precio_3,
+    record.mayorista,
+    record.mayorista_2,
+    record.mayorista_3,
   ]
 
   const prices: number[] = []
   for (const value of candidates) {
-    if (isFiniteNumber(value) && !prices.includes(value)) {
+    if (isFiniteNumber(value) && value !== item.price && !prices.includes(value)) {
       prices.push(value)
     }
   }
+
+  // Fallback: si la API usa nombres no contemplados, buscar campos numéricos
+  // que parezcan precios adicionales (price/precio/wholesale/mayorista/nivel/tier).
+  if (prices.length === 0) {
+    for (const [key, value] of Object.entries(record)) {
+      if (!isFiniteNumber(value) || value === item.price) continue
+      if (!/(price|precio|wholesale|mayorista|nivel|tier)/i.test(key)) continue
+      if (/^price$/i.test(key)) continue
+      if (!prices.includes(value)) prices.push(value)
+    }
+  }
+
   return prices
 }
 
@@ -211,7 +237,10 @@ export async function fetchProductsPage(
     params.set('category_id', query.categoryId)
   }
 
-  const response = await fetch(apiUrl(`/api/products?${params}`), { signal })
+  const response = await fetch(apiUrl(`/api/products?${params}`), {
+    signal,
+    credentials: 'include',
+  })
   if (!response.ok) {
     throw new Error(`La API respondió con estado ${response.status}.`)
   }
@@ -236,7 +265,10 @@ export async function fetchProductsPage(
  * solo los productos ya descargados.
  */
 export async function fetchCategories(signal: AbortSignal): Promise<Category[]> {
-  const response = await fetch(apiUrl('/api/categories'), { signal })
+  const response = await fetch(apiUrl('/api/categories'), {
+    signal,
+    credentials: 'include',
+  })
   if (!response.ok) {
     throw new Error(`La API respondió con estado ${response.status}.`)
   }
@@ -265,7 +297,7 @@ export async function fetchProductById(
 ): Promise<Product | null> {
   const response = await fetch(
     apiUrl(`/api/products/${encodeURIComponent(id)}`),
-    { signal },
+    { signal, credentials: 'include' },
   )
   if (response.status === 404) return null
   if (!response.ok) {
@@ -281,7 +313,7 @@ export async function fetchProductBySlug(
 ): Promise<Product | null> {
   const response = await fetch(
     apiUrl(`/api/products/slug/${encodeURIComponent(slug)}`),
-    { signal },
+    { signal, credentials: 'include' },
   )
   if (response.status === 404) return null
   if (!response.ok) {
