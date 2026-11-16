@@ -44,12 +44,70 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function pushPrice(prices: number[], value: unknown, basePrice: number) {
+  if (isFiniteNumber(value) && value !== basePrice && !prices.includes(value)) {
+    prices.push(value)
+  }
+}
+
+function readPricesFromWholesaleEntry(entry: unknown, basePrice: number): number[] {
+  if (isFiniteNumber(entry)) return entry !== basePrice ? [entry] : []
+  if (!isRecord(entry)) return []
+
+  const candidates: unknown[] = [
+    entry.mayor_publico,
+    entry.mayorPublico,
+    entry.gran_mayor_publico,
+    entry.granMayorPublico,
+    entry.wholesale_price,
+    entry.wholesalePrice,
+    entry.large_wholesale_price,
+    entry.largeWholesalePrice,
+    entry.price_2,
+    entry.price2,
+    entry.price_3,
+    entry.price3,
+    entry.precio_mayor,
+    entry.precioMayor,
+    entry.precio_gran_mayor,
+    entry.precioGranMayor,
+    entry.precio_mayorista,
+    entry.precioMayorista,
+  ]
+
+  const prices: number[] = []
+  for (const value of candidates) pushPrice(prices, value, basePrice)
+
+  // Si el objeto trae otros campos numéricos de precio no contemplados.
+  if (prices.length === 0) {
+    for (const [key, value] of Object.entries(entry)) {
+      if (!/(price|precio|wholesale|mayor|nivel|tier)/i.test(key)) continue
+      pushPrice(prices, value, basePrice)
+    }
+  }
+
+  return prices
+}
+
 function readWholesalePrices(item: ApiProduct): number[] {
   const record = item as unknown as Record<string, unknown>
   const listValue = item.wholesale_prices ?? item.wholesalePrices
   if (Array.isArray(listValue)) {
-    const prices = listValue.filter(isFiniteNumber)
-    if (prices.length > 0) return prices
+    const numberPrices = listValue.filter(isFiniteNumber)
+    if (numberPrices.length > 0) {
+      return numberPrices.filter((value) => value !== item.price)
+    }
+
+    // API puede devolver un arreglo de objetos por proveedor, p. ej.
+    // [{ supplier_name, mayor_publico, gran_mayor_publico }]
+    for (const entry of listValue) {
+      const prices = readPricesFromWholesaleEntry(entry, item.price)
+      if (prices.length > 0) return prices
+    }
   }
 
   const candidates: unknown[] = [
@@ -63,6 +121,12 @@ function readWholesalePrices(item: ApiProduct): number[] {
     item.price3,
     item.wholesale_price_3,
     item.wholesalePrice3,
+    record.large_wholesale_price,
+    record.largeWholesalePrice,
+    record.mayor_publico,
+    record.mayorPublico,
+    record.gran_mayor_publico,
+    record.granMayorPublico,
     record.precio_mayorista,
     record.precioMayorista,
     record.precio_mayorista_2,
@@ -79,11 +143,7 @@ function readWholesalePrices(item: ApiProduct): number[] {
   ]
 
   const prices: number[] = []
-  for (const value of candidates) {
-    if (isFiniteNumber(value) && value !== item.price && !prices.includes(value)) {
-      prices.push(value)
-    }
-  }
+  for (const value of candidates) pushPrice(prices, value, item.price)
 
   // Fallback: si la API usa nombres no contemplados, buscar campos numéricos
   // que parezcan precios adicionales (price/precio/wholesale/mayorista/nivel/tier).
