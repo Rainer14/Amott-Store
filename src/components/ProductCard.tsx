@@ -76,7 +76,6 @@ export const ProductCard = memo(function ProductCard({
         aria-label={`Ver detalles de ${product.name}`}
       >
         <span className="product__tag">
-          <i aria-hidden="true" />
           {product.categoryName}
         </span>
         {product.imageUrl ? (
@@ -113,8 +112,8 @@ export const ProductCard = memo(function ProductCard({
         </h3>
         {description && <p className="product__blurb">{description}</p>}
         <div className="product__meta">
+          <span className="mono">{product.sku}</span>
           <span>{product.brand || product.categoryName}</span>
-          <span>SKU {product.sku}</span>
         </div>
         <div className="product__foot">
           {customer?.isWholesale && product.wholesalePrices?.length ? (
@@ -135,23 +134,24 @@ export const ProductCard = memo(function ProductCard({
           ) : (
             <span className="product__price">{formatPrice(product.price)}</span>
           )}
-          {customer && (
-            <button
-              type="button"
-              className={`product__add${added ? ' product__add--added' : ''}`}
-              onClick={() => void handleAdd()}
-              disabled={adding}
-              aria-label={`Añadir ${product.name} a la bolsa`}
-            >
-              {adding ? 'Añadiendo…' : added ? 'Añadido' : 'Añadir'}
-            </button>
-          )}
+          <div className="product__actions">
+            {customer ? (
+              <button
+                type="button"
+                className={`product__add${added ? ' product__add--added' : ''}`}
+                onClick={() => void handleAdd()}
+                disabled={adding}
+                aria-label={`Añadir ${product.name} a la bolsa`}
+              >
+                {adding ? 'Añadiendo…' : added ? 'Añadido' : 'Añadir'}
+              </button>
+            ) : (
+              <Link className="product__signin button button--outline" to="/iniciar-sesion">
+                Iniciar sesión
+              </Link>
+            )}
+          </div>
         </div>
-        {!customer && (
-          <Link className="product__signin" to="/iniciar-sesion">
-            Inicia sesión para comprar
-          </Link>
-        )}
         {addError && (
           <p className="product__error" role="alert">
             {addError}

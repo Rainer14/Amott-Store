@@ -193,12 +193,14 @@ export function Collection() {
   return (
     <section className="collection" id="tienda">
       <div className="container">
-        <div className="section-head">
-          <h2>Explora nuestros productos</h2>
+        <div className="section-head collection-head">
+          <div>
+            <p className="collection-head__eyebrow">Catálogo</p>
+            <h2>Explora nuestros productos</h2>
+          </div>
           <p>
             Encuentra lo que necesitas entre nuestros distintos rubros y
-            categorías. Explora el catálogo y elige los productos ideales para
-            ti.
+            categorías. Explora el catálogo y elige los productos ideales para ti.
           </p>
         </div>
 
@@ -371,26 +373,28 @@ export function Collection() {
             </div>
 
             <div className="collection__toolbar">
-              <p>
-                {isPending
-                  ? trimmedSearch
-                    ? 'Buscando productos…'
-                    : 'Cargando productos…'
-                  : error
-                    ? 'Productos no disponibles'
-                    : trimmedSearch
-                      ? `${visibleProducts.length} ${visibleProducts.length === 1 ? 'resultado' : 'resultados'}`
-                      : `${visibleProducts.length} ${visibleProducts.length === 1 ? 'producto' : 'productos'}`}
-              </p>
-              {!isPending && !error && (
-                <span className="collection__progress">
-                  {products.length} de {totalProducts} cargados
-                </span>
-              )}
+              <div className="collection__toolbar-left">
+                <p className="collection__count">
+                  {isPending
+                    ? trimmedSearch
+                      ? 'Buscando productos…'
+                      : 'Cargando productos…'
+                    : error
+                      ? 'Productos no disponibles'
+                      : trimmedSearch
+                        ? `${visibleProducts.length} ${visibleProducts.length === 1 ? 'resultado' : 'resultados'}`
+                        : `${visibleProducts.length} ${visibleProducts.length === 1 ? 'producto' : 'productos'}`}
+                </p>
+                {!isPending && !error && (
+                  <span className="collection__progress">
+                    {products.length} de {totalProducts} cargados
+                  </span>
+                )}
+              </div>
               {hasActiveFilters && (
                 <button
                   type="button"
-                  className="collection__clear"
+                  className="collection__clear button button--outline"
                   onClick={clearFilters}
                 >
                   Limpiar filtros
