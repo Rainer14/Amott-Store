@@ -163,21 +163,29 @@ export function CartDrawer() {
     setCheckoutError(null)
     setCheckoutSubmitting(true)
     const data = new FormData(event.currentTarget)
-    const body = {
-      shippingAddress: {
-        fullName: String(data.get('name') ?? ''),
-        email: String(data.get('email') ?? ''),
-        address: String(data.get('address') ?? ''),
-        city: String(data.get('city') ?? ''),
-        postalCode: String(data.get('postal') ?? ''),
-      },
+    const shippingName = String(data.get('name') ?? '').trim()
+    const shippingAddress = String(data.get('address') ?? '').trim()
+    const shippingCity = String(data.get('city') ?? '').trim()
+    const shippingPostal = String(data.get('postal') ?? '').trim()
+    const body: Record<string, string> = {
+      shipping_name: shippingName,
+      shipping_address: shippingPostal
+        ? `${shippingAddress}, ${shippingPostal}`
+        : shippingAddress,
+      shipping_city: shippingCity,
     }
+
+    const idempotencyKey =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 
     try {
       const response = await fetch(apiUrl('/api/orders/checkout'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
           ...(accessToken
             ? { Authorization: `Bearer ${accessToken}` }
             : {}),
