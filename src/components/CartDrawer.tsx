@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -9,6 +10,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
 import { useProducts } from '../data/ProductsContext'
+import type { Product } from '../types'
 import { formatPrice } from '../lib/format'
 import { LoadingState } from './LoadingState'
 import {
@@ -18,9 +20,26 @@ import {
 import { apiUrl } from '../lib/api'
 
 type Step = 'bag' | 'checkout' | 'done'
+type WholesalePaymentMethod = 'VES' | 'USDT'
 
 interface Order {
   id: string | null
+}
+
+function getWholesaleUnitPrice(
+  product: Product,
+  method: WholesalePaymentMethod,
+) {
+  const mayor = product.wholesalePrices?.[0]
+  const usdt = product.wholesalePrices?.[1]
+  if (method === 'VES') return mayor ?? product.price
+  return usdt ?? mayor ?? product.price
+}
+
+function getPaymentMethodLabel(method: WholesalePaymentMethod) {
+  return method === 'VES'
+    ? 'Bolívares (precio MAYOR)'
+    : 'USDT / USD (precio USDT)'
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -50,9 +69,20 @@ export function CartDrawer() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false)
   const [cartActionError, setCartActionError] = useState<string | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<WholesalePaymentMethod>('VES')
   const panelRef = useRef<HTMLDivElement | null>(null)
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
+
+  const isWholesale = Boolean(customer?.isWholesale)
+  const effectiveSubtotal = useMemo(() => {
+    if (!isWholesale) return subtotal
+    return lines.reduce((sum, line) => {
+      const product = findProduct(line.productId)
+      if (!product) return sum
+      return sum + getWholesaleUnitPrice(product, paymentMethod) * line.qty
+    }, 0)
+  }, [findProduct, isWholesale, lines, paymentMethod, subtotal])
 
   const handleClose = useCallback(() => {
     setStep('bag')
@@ -173,6 +203,9 @@ export function CartDrawer() {
         ? `${shippingAddress}, ${shippingPostal}`
         : shippingAddress,
       shipping_city: shippingCity,
+    }
+    if (isWholesale) {
+      body.notes = `Método de pago: ${getPaymentMethodLabel(paymentMethod)}`
     }
 
     const idempotencyKey =
@@ -379,11 +412,18 @@ export function CartDrawer() {
                           <div className="cart-item__top">
                             <h3>{product.name}</h3>
                             <span>
-                              {formatPrice(product.price * line.qty)}
+                              {formatPrice(
+                                (isWholesale
+                                  ? getWholesaleUnitPrice(product, paymentMethod)
+                                  : product.price) * line.qty,
+                              )}
                             </span>
                           </div>
                           <p className="cart-item__origin">
                             SKU {product.sku}
+                            {isWholesale && (
+                              <> · {formatPrice(getWholesaleUnitPrice(product, paymentMethod))} c/u</>
+                            )}
                           </p>
                           <div className="cart-item__controls">
                             <div
@@ -529,8 +569,13 @@ export function CartDrawer() {
 
               <div className="checkout__summary">
                 <span>Subtotal</span>
-                <strong>{formatPrice(subtotal)}</strong>
+                <strong>{formatPrice(effectiveSubtotal)}</strong>
               </div>
+              {isWholesale && (
+                <p className="checkout__intro">
+                  Método de pago: {getPaymentMethodLabel(paymentMethod)}
+                </p>
+              )}
 
               <button
                 type="submit"
@@ -574,9 +619,37 @@ export function CartDrawer() {
 
         {step === 'bag' && !cartLoading && lines.length > 0 && (
           <div className="cart-panel__foot">
+            {isWholesale && (
+              <div className="checkout__verification" role="group" aria-label="Método de pago">
+                <strong>Método de pago</strong>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className={`button ${paymentMethod === 'VES' ? 'button--solid' : 'button--outline'}`}
+                    onClick={() => setPaymentMethod('VES')}
+                    aria-pressed={paymentMethod === 'VES'}
+                  >
+                    Bolívares
+                  </button>
+                  <button
+                    type="button"
+                    className={`button ${paymentMethod === 'USDT' ? 'button--solid' : 'button--outline'}`}
+                    onClick={() => setPaymentMethod('USDT')}
+                    aria-pressed={paymentMethod === 'USDT'}
+                  >
+                    USDT / USD
+                  </button>
+                </div>
+                <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                  {paymentMethod === 'VES'
+                    ? 'Se usará el precio MAYOR de cada producto.'
+                    : 'Se usará el precio USDT de cada producto.'}
+                </p>
+              </div>
+            )}
             <div className="cart-total">
               <span>Subtotal</span>
-              <strong>{formatPrice(subtotal)}</strong>
+              <strong>{formatPrice(effectiveSubtotal)}</strong>
             </div>
             <p className="cart-shipping">
               Envío calculado al finalizar. Embalaje sin plástico.
