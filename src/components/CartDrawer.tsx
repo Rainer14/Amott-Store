@@ -443,7 +443,32 @@ export function CartDrawer() {
                               >
                                 −
                               </button>
-                              <span aria-live="polite">{line.qty}</span>
+                              <input
+                                type="number"
+                                min={1}
+                                step={1}
+                                inputMode="numeric"
+                                defaultValue={line.qty}
+                                key={`${product.id}-${line.qty}`}
+                                disabled={cartLoading}
+                                aria-label={`Cantidad de ${product.name}`}
+                                onBlur={(event) => {
+                                  const next = Number.parseInt(event.currentTarget.value, 10)
+                                  if (!Number.isFinite(next) || next < 1) {
+                                    event.currentTarget.value = String(line.qty)
+                                    return
+                                  }
+                                  if (next !== line.qty) {
+                                    void handleCartAction(() => setQty(product.id, next))
+                                  }
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter') {
+                                    event.preventDefault()
+                                    event.currentTarget.blur()
+                                  }
+                                }}
+                              />
                               <button
                                 type="button"
                                 onClick={() =>
@@ -620,30 +645,51 @@ export function CartDrawer() {
         {step === 'bag' && !cartLoading && lines.length > 0 && (
           <div className="cart-panel__foot">
             {isWholesale && (
-              <div className="checkout__verification" role="group" aria-label="Método de pago">
-                <strong>Método de pago</strong>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className={`button ${paymentMethod === 'VES' ? 'button--solid' : 'button--outline'}`}
-                    onClick={() => setPaymentMethod('VES')}
-                    aria-pressed={paymentMethod === 'VES'}
-                  >
-                    Bolívares
-                  </button>
-                  <button
-                    type="button"
-                    className={`button ${paymentMethod === 'USDT' ? 'button--solid' : 'button--outline'}`}
-                    onClick={() => setPaymentMethod('USDT')}
-                    aria-pressed={paymentMethod === 'USDT'}
-                  >
-                    USDT / USD
-                  </button>
+              <div
+                role="group"
+                aria-label="Método de pago"
+                style={{
+                  marginBottom: '10px',
+                  padding: '8px 10px',
+                  border: '1px solid rgba(0,0,0,0.12)',
+                  background: 'rgba(0,0,0,0.03)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.72rem', fontWeight: 600 }}>
+                    Pago
+                  </span>
+                  <div style={{ display: 'inline-flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      className={`button ${paymentMethod === 'VES' ? 'button--solid' : 'button--outline'}`}
+                      onClick={() => setPaymentMethod('VES')}
+                      aria-pressed={paymentMethod === 'VES'}
+                      style={{ minHeight: '30px', padding: '4px 10px', fontSize: '0.72rem' }}
+                    >
+                      Bs (MAYOR)
+                    </button>
+                    <button
+                      type="button"
+                      className={`button ${paymentMethod === 'USDT' ? 'button--solid' : 'button--outline'}`}
+                      onClick={() => setPaymentMethod('USDT')}
+                      aria-pressed={paymentMethod === 'USDT'}
+                      style={{ minHeight: '30px', padding: '4px 10px', fontSize: '0.72rem' }}
+                    >
+                      USDT/USD
+                    </button>
+                  </div>
                 </div>
-                <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                  {paymentMethod === 'VES'
-                    ? 'Se usará el precio MAYOR de cada producto.'
-                    : 'Se usará el precio USDT de cada producto.'}
+                <p style={{ marginTop: '4px', fontSize: '0.72rem', lineHeight: 1.3, color: 'rgba(0,0,0,0.68)' }}>
+                  {paymentMethod === 'VES' ? 'Precios MAYOR por producto.' : 'Precios USDT por producto.'}
                 </p>
               </div>
             )}
