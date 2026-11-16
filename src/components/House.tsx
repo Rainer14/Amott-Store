@@ -24,7 +24,7 @@ export function House() {
             encontrar productos útiles para tu día a día, desde distintas
             categorías en un solo lugar.
           </p>
-          <a className="house__place" href="mailto:hola@amott.shop">
+          <a className="house__place" href="mailto:hiamottstore@gmail.com">
             ¿Necesitas ayuda? Contáctanos.
           </a>
         </div>

@@ -20,7 +20,7 @@ export function Footer() {
               productos disponibles.
             </p>
           </div>
-          <a className="button button--solid" href="mailto:hola@amott.shop">
+          <a className="button button--solid" href="mailto:hiamottstore@gmail.com">
             Escríbenos
           </a>
         </div>
@@ -44,8 +44,8 @@ export function Footer() {
             </div>
             <div>
               <h3>Contacto</h3>
-              <a href="mailto:hola@amott.shop">hola@amott.shop</a>
-              <a href="mailto:hola@amott.shop?subject=Consulta%20sobre%20env%C3%ADos">
+              <a href="mailto:hiamottstore@gmail.com">hiamottstore@gmail.com</a>
+              <a href="mailto:hiamottstore@gmail.com?subject=Consulta%20sobre%20env%C3%ADos">
                 Consultas sobre envíos
               </a>
             </div>

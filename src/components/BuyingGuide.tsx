@@ -12,7 +12,7 @@ const notes = [
   {
     title: '¿Tienes preguntas?',
     time: '03',
-    body: 'Si necesitas más información para elegir, escríbenos a hola@amott.shop. Estamos aquí para ayudarte.',
+    body: 'Si necesitas más información para elegir, escríbenos a hiamottstore@gmail.com. Estamos aquí para ayudarte.',
   },
 ]
 

@@ -426,12 +426,14 @@ export function ProductDetail() {
             {customer?.isWholesale && product.wholesalePrices?.length ? (
               <div className="product-detail__prices" aria-label="Precios">
                 <p className="product-detail__price">
-                  <span className="product-detail__price-label">Precio 1: </span>
+                  <span className="product-detail__price-label">DETAL: </span>
                   {formatPrice(product.price)}
                 </p>
                 {product.wholesalePrices.slice(0, 2).map((value, index) => (
                   <p className="product-detail__price" key={`${value}-${index}`}>
-                    <span className="product-detail__price-label">{`Precio ${index + 2}: `}</span>
+                    <span className="product-detail__price-label">
+                      {index === 0 ? 'MAYOR: ' : 'USDT: '}
+                    </span>
                     {formatPrice(value)}
                   </p>
                 ))}

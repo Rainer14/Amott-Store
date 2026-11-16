@@ -120,12 +120,14 @@ export const ProductCard = memo(function ProductCard({
           {customer?.isWholesale && product.wholesalePrices?.length ? (
             <div className="product__prices" aria-label="Precios">
               <span className="product__price">
-                <span className="product__price-label">Precio 1</span>
+                <span className="product__price-label">DETAL</span>
                 {formatPrice(product.price)}
               </span>
               {product.wholesalePrices.slice(0, 2).map((value, index) => (
                 <span className="product__price" key={`${value}-${index}`}>
-                  <span className="product__price-label">{`Precio ${index + 2}`}</span>
+                  <span className="product__price-label">
+                    {index === 0 ? 'MAYOR' : 'USDT'}
+                  </span>
                   {formatPrice(value)}
                 </span>
               ))}
