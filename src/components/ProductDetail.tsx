@@ -7,6 +7,7 @@ import { useProducts } from '../data/ProductsContext'
 import { formatPrice } from '../lib/format'
 import { getUserFacingError, HttpRequestError } from '../lib/userFacingError'
 import { apiUrl } from '../lib/api'
+import { getRecommendedProducts } from '../lib/recommendations'
 import type { Product } from '../types'
 import { LoadingState } from './LoadingState'
 import { ProductCard } from './ProductCard'
@@ -139,7 +140,7 @@ export function ProductDetail() {
     rememberProduct,
   } = useProducts()
   const { customer, accessToken } = useAuth()
-  const { add } = useCart()
+  const { add, lines } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [images, setImages] = useState<ProductImage[]>([])
   const [imageSelection, setImageSelection] = useState({ slug: '', index: 0 })
@@ -243,21 +244,24 @@ export function ProductDetail() {
     slug,
   ])
 
-  const recommendedProducts = useMemo(() => {
-    if (!product) return []
-    const otherProducts = cachedProducts.filter((item) => item.id !== product.id)
-    const sameCategory = otherProducts.filter(
-      (item) => item.category === product.category,
-    )
-    const chosen = [...sameCategory]
-    for (const item of otherProducts) {
-      if (chosen.length >= 12) break
-      if (!chosen.some((candidate) => candidate.id === item.id)) {
-        chosen.push(item)
-      }
-    }
-    return chosen.slice(0, 12)
-  }, [product, cachedProducts])
+  const cartProductIds = useMemo(
+    () => new Set(lines.map((line) => line.productId)),
+    [lines],
+  )
+  const cartRecommendationProducts = useMemo(
+    () => cachedProducts.filter((item) => cartProductIds.has(item.id)),
+    [cartProductIds, cachedProducts],
+  )
+  const recommendedProducts = useMemo(
+    () =>
+      product
+        ? getRecommendedProducts(product, cachedProducts, {
+            limit: 12,
+            cartProducts: cartRecommendationProducts,
+          })
+        : [],
+    [cartRecommendationProducts, cachedProducts, product],
+  )
 
   const moveRecommendations = (direction: 'left' | 'right') => {
     recommendationsRef.current?.scrollBy({
