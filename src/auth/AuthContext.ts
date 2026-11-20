@@ -11,6 +11,9 @@ export interface Customer {
   /** Compatibilidad con la UI existente: true para oferta y mayorista. */
   isWholesale: boolean
   priceRole: CustomerPriceRole
+  /** Datos de contacto capturados en el registro. */
+  phone: string
+  address: string | null
 }
 
 export interface RegisterResult {
@@ -27,6 +30,8 @@ export interface AuthContextValue {
     name: string,
     email: string,
     password: string,
+    phone: string,
+    address?: string,
   ) => Promise<RegisterResult>
   verifyEmail: (token: string) => Promise<void>
   resendVerification: (email: string) => Promise<void>

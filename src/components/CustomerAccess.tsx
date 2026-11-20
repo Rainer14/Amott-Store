@@ -1,11 +1,14 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { LoadingState } from './LoadingState'
+import { fetchMyOrders } from '../data/orders'
+import { formatPrice } from '../lib/format'
 import {
   getUserFacingError,
   HttpRequestError,
 } from '../lib/userFacingError'
+import type { CustomerOrder } from '../types'
+import { LoadingState } from './LoadingState'
 
 export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
   const { customer, loading, error: sessionError, login, register } = useAuth()
@@ -31,7 +34,9 @@ export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
     try {
       if (isRegister) {
         const name = String(formData.get('name') ?? '').trim()
-        const result = await register(name, email, password)
+        const phone = String(formData.get('phone') ?? '').trim()
+        const address = String(formData.get('address') ?? '').trim()
+        const result = await register(name, email, password, phone, address)
         navigate('/verificar-correo', {
           replace: true,
           state: { email: result.email },
@@ -92,6 +97,27 @@ export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
                 autoComplete="name"
                 required
                 maxLength={120}
+                disabled={submitting || loading}
+              />
+              <label htmlFor="customer-phone">Número de teléfono</label>
+              <input
+                id="customer-phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+58 416 1234567"
+                required
+                minLength={7}
+                maxLength={25}
+                disabled={submitting || loading}
+              />
+              <label htmlFor="customer-address">Dirección (opcional)</label>
+              <input
+                id="customer-address"
+                name="address"
+                type="text"
+                autoComplete="street-address"
+                maxLength={240}
                 disabled={submitting || loading}
               />
             </>
@@ -168,7 +194,7 @@ export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
           </div>
           {isRegister && (
             <p className="customer-access__hint">
-              Usa al menos 8 caracteres.
+              Usa al menos 8 caracteres. El teléfono es obligatorio.
             </p>
           )}
           <button
@@ -198,10 +224,67 @@ export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
   )
 }
 
+type AccountTab = 'active' | 'paid' | 'all'
+
+const orderStatusLabels: Record<string, string> = {
+  created: 'Creada',
+  confirmed: 'Confirmada',
+  shipped: 'En camino',
+  delivered: 'Entregada',
+  cancelled: 'Cancelada',
+}
+
+const paymentStatusLabels: Record<string, string> = {
+  unpaid: 'Sin pagar',
+  paid: 'Pagada',
+  partial: 'Pago parcial',
+  failed: 'Pago fallido',
+  refunded: 'Reembolsada',
+}
+
+const paymentMethodLabels: Record<string, string> = {
+  bolivares: 'Bolívares',
+  usdt: 'USDT',
+  usd: 'USD',
+}
+
+function formatOrderDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('es-VE', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
 export function CustomerAccount() {
-  const { customer, loading, logout } = useAuth()
+  const { customer, accessToken, loading, logout } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [orders, setOrders] = useState<CustomerOrder[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(true)
+  const [ordersError, setOrdersError] = useState<string | null>(null)
+  const [tab, setTab] = useState<AccountTab>('active')
+
+  useEffect(() => {
+    if (!customer || !accessToken) return
+    const controller = new AbortController()
+    fetchMyOrders(accessToken, controller.signal)
+      .then((items) => {
+        if (controller.signal.aborted) return
+        setOrders(items)
+        setOrdersError(null)
+        setOrdersLoading(false)
+      })
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted) {
+          setOrdersError(getUserFacingError(cause, 'orders'))
+          setOrdersLoading(false)
+        }
+      })
+    return () => controller.abort()
+  }, [customer, accessToken])
 
   if (loading) {
     return (
@@ -213,6 +296,17 @@ export function CustomerAccount() {
   if (!customer) {
     return <Navigate to="/iniciar-sesion" replace />
   }
+
+  const activeOrders = orders.filter(
+    (order) => order.status !== 'delivered' && order.status !== 'cancelled',
+  )
+  const paidOrders = orders.filter((order) => order.payment_status === 'paid')
+  const tabs: { key: AccountTab; label: string; items: CustomerOrder[] }[] = [
+    { key: 'active', label: 'Activas', items: activeOrders },
+    { key: 'paid', label: 'Pagadas', items: paidOrders },
+    { key: 'all', label: 'Historial', items: orders },
+  ]
+  const visibleOrders = tabs.find((option) => option.key === tab)?.items ?? []
 
   const handleLogout = async () => {
     setError(null)
@@ -228,10 +322,16 @@ export function CustomerAccount() {
 
   return (
     <section className="customer-access">
-      <div className="customer-access__panel">
+      <div className="customer-access__panel customer-account__panel">
         <p className="customer-access__eyebrow">AMOTT · TU CUENTA</p>
         <h1>Hola, {customer.name}.</h1>
         <p className="customer-access__intro">{customer.email}</p>
+        {(customer.phone || customer.address) && (
+          <p className="customer-account__contact">
+            {customer.phone && <span>Teléfono: {customer.phone}</span>}
+            {customer.address && <span>Dirección: {customer.address}</span>}
+          </p>
+        )}
         {!customer.emailVerified && (
           <p
             className="customer-access__notice customer-account__verification"
@@ -248,6 +348,61 @@ export function CustomerAccount() {
             {error}
           </p>
         )}
+
+        <div className="customer-account__orders">
+          <h2 className="customer-account__title">Mis pedidos</h2>
+          <div className="customer-account__tabs" role="group" aria-label="Filtrar pedidos">
+            {tabs.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className="customer-account__tab"
+                aria-pressed={tab === option.key}
+                onClick={() => setTab(option.key)}
+              >
+                {option.label}
+                <span className="customer-account__count">{option.items.length}</span>
+              </button>
+            ))}
+          </div>
+
+          {ordersLoading ? (
+            <LoadingState label="Cargando tus pedidos…" />
+          ) : ordersError ? (
+            <p className="customer-access__error" role="alert">
+              {ordersError}
+            </p>
+          ) : visibleOrders.length === 0 ? (
+            <p className="customer-account__empty">
+              Todavía no tienes pedidos en esta sección.
+            </p>
+          ) : (
+            <ul className="customer-account__order-list">
+              {visibleOrders.map((order) => (
+                <li className="customer-account__order" key={order.id}>
+                  <div className="customer-account__order-head">
+                    <strong>Pedido #{order.id.slice(0, 8)}</strong>
+                    <span>{formatPrice(order.total)}</span>
+                  </div>
+                  <p className="customer-account__order-meta">
+                    {formatOrderDate(order.created_at)} · {order.item_count}{' '}
+                    {order.item_count === 1 ? 'artículo' : 'artículos'} ·{' '}
+                    {paymentMethodLabels[order.payment_method] ?? order.payment_method}
+                  </p>
+                  <div className="customer-account__badges">
+                    <span className={`order-badge order-badge--${order.status}`}>
+                      {orderStatusLabels[order.status] ?? order.status}
+                    </span>
+                    <span className={`order-badge order-badge--${order.payment_status}`}>
+                      {paymentStatusLabels[order.payment_status] ?? order.payment_status}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="customer-account__actions">
           <Link className="button button--solid" to="/">
             Seguir explorando

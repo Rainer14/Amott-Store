@@ -35,6 +35,31 @@ export interface CartLine {
   qty: number
 }
 
+export type OrderStatus =
+  | 'created'
+  | 'confirmed'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+
+export type PaymentStatus =
+  | 'unpaid'
+  | 'paid'
+  | 'partial'
+  | 'failed'
+  | 'refunded'
+
+/** Resumen que GET /api/orders devuelve al cliente autenticado. */
+export interface CustomerOrder {
+  id: string
+  status: OrderStatus
+  payment_status: PaymentStatus
+  payment_method: 'bolivares' | 'usdt' | 'usd'
+  total: number
+  item_count: number
+  created_at: string
+}
+
 export interface Category {
   id: string
   label: string

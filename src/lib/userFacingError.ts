@@ -5,6 +5,7 @@ export type UserErrorContext =
   | 'logout'
   | 'cart'
   | 'checkout'
+  | 'orders'
   | 'catalog'
   | 'verifyEmail'
   | 'resendVerification'
@@ -30,6 +31,7 @@ const fallbackMessages: Record<UserErrorContext, string> = {
   logout: 'No pudimos confirmar el cierre de sesión. Inténtalo nuevamente.',
   cart: 'No pudimos actualizar tu carrito. Inténtalo nuevamente.',
   checkout: 'No pudimos procesar tu compra. Inténtalo nuevamente.',
+  orders: 'No pudimos cargar tus pedidos. Inténtalo nuevamente.',
   catalog: 'No pudimos cargar el catálogo. Inténtalo nuevamente.',
   verifyEmail: 'No pudimos verificar tu correo. Inténtalo nuevamente.',
   resendVerification:
@@ -80,7 +82,12 @@ export function getUserFacingError(
     if (context === 'login') {
       return 'El correo o la contraseña no son correctos.'
     }
-    if (context === 'session' || context === 'cart' || context === 'checkout') {
+    if (
+      context === 'session' ||
+      context === 'cart' ||
+      context === 'checkout' ||
+      context === 'orders'
+    ) {
       return 'Tu sesión pudo haber expirado. Inicia sesión para continuar.'
     }
     if (context === 'logout') {

@@ -151,6 +151,9 @@ function parseCustomer(payload: unknown): Customer | null {
         ? 'oferta'
         : 'none'
 
+  const rawPhone = customer.phone ?? customer.phone_number ?? customer.telefono
+  const rawAddress = customer.address ?? customer.direccion
+
   return {
     id: String(id),
     email,
@@ -160,6 +163,8 @@ function parseCustomer(payload: unknown): Customer | null {
     emailVerified: typeof verifiedValue === 'boolean' ? verifiedValue : true,
     isWholesale: priceRole !== 'none',
     priceRole,
+    phone: typeof rawPhone === 'string' ? rawPhone : '',
+    address: typeof rawAddress === 'string' && rawAddress.trim() ? rawAddress : null,
   }
 }
 
@@ -212,6 +217,42 @@ function assertEmailVerified(customer: Customer) {
   }
 }
 
+/**
+ * El refresh rota la cookie en cada llamada. Si el efecto de restauracion se
+ * ejecuta dos veces (StrictMode en desarrollo), la segunda peticion llegaria
+ * con una cookie ya revocada y cerraria la sesion. Compartimos la promesa
+ * durante toda la carga de la pagina para que solo se rote una vez.
+ */
+let restorePromise: Promise<{
+  token: string | null
+  customer: Customer | null
+}> | null = null
+
+function restoreSessionOnce() {
+  if (!restorePromise) {
+    restorePromise = (async () => {
+      try {
+        const payload = await requestApi('/api/customer-auth/refresh', {
+          method: 'POST',
+        })
+        const token = getAccessToken(payload)
+        const profile = await loadCustomer(token)
+        return { token, customer: profile }
+      } catch (cause) {
+        if (
+          cause instanceof HttpRequestError &&
+          [400, 401, 403, 422].includes(cause.status)
+        ) {
+          // Sin cookie o cookie revocada: es una visita anonima, no un error.
+          return { token: null, customer: null }
+        }
+        throw cause
+      }
+    })()
+  }
+  return restorePromise
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
@@ -219,36 +260,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const controller = new AbortController()
+    let active = true
 
-    async function restoreSession() {
-      try {
-        const payload = await requestApi('/api/customer-auth/refresh', {
-          method: 'POST',
-          signal: controller.signal,
-        })
-        const refreshedToken = getAccessToken(payload)
-        const restoredCustomer = await loadCustomer(refreshedToken)
-        if (controller.signal.aborted) return
-        setAccessToken(refreshedToken)
+    restoreSessionOnce()
+      .then(({ token, customer: restoredCustomer }) => {
+        if (!active) return
+        setAccessToken(token)
         setCustomer(restoredCustomer)
-      } catch (cause) {
-        if (controller.signal.aborted) return
-        if (
-          !(cause instanceof HttpRequestError) ||
-          ![400, 401, 403, 422].includes(cause.status)
-        ) {
-          setError(getUserFacingError(cause, 'session'))
-        }
+        setLoading(false)
+      })
+      .catch((cause: unknown) => {
+        if (!active) return
+        setError(getUserFacingError(cause, 'session'))
         setAccessToken(null)
         setCustomer(null)
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }
+        setLoading(false)
+      })
 
-    void restoreSession()
-    return () => controller.abort()
+    return () => {
+      active = false
+    }
   }, [])
 
   const completeSession = useCallback(
@@ -317,6 +348,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: string,
       email: string,
       password: string,
+      phone: string,
+      address?: string,
     ): Promise<RegisterResult> => {
       const normalizedEmail = email.trim()
       const payload = await requestApi('/api/customer-auth/register', {
@@ -325,6 +358,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           full_name: name.trim(),
           email: normalizedEmail,
           password,
+          phone: phone.trim(),
+          ...(address?.trim() ? { address: address.trim() } : {}),
         }),
       })
 

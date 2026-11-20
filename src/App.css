@@ -1631,6 +1631,135 @@
   color: #713020;
 }
 
+.customer-account__panel {
+  width: min(100%, 720px);
+}
+
+.customer-account__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 8px;
+  color: rgba(0, 0, 0, 0.62);
+  font-size: 0.82rem;
+}
+
+.customer-account__orders {
+  margin-top: 30px;
+}
+
+.customer-account__title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.customer-account__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.customer-account__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.customer-account__tab:hover {
+  border-color: var(--accent-deep);
+}
+
+.customer-account__tab[aria-pressed='true'] {
+  border-color: var(--accent-deep);
+  background: var(--accent-pale);
+}
+
+.customer-account__count {
+  color: rgba(0, 0, 0, 0.58);
+  font-size: 0.72rem;
+}
+
+.customer-account__empty {
+  margin-top: 16px;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.86rem;
+}
+
+.customer-account__order-list {
+  display: grid;
+  gap: 10px;
+  max-height: 380px;
+  margin: 16px 0 0;
+  padding: 0 4px 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.customer-account__order {
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  background: var(--chalk);
+}
+
+.customer-account__order-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.customer-account__order-meta {
+  margin-top: 6px;
+  color: rgba(0, 0, 0, 0.62);
+  font-size: 0.78rem;
+}
+
+.customer-account__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.order-badge {
+  padding: 3px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: var(--bone);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.order-badge--paid,
+.order-badge--delivered {
+  border-color: rgba(44, 106, 62, 0.4);
+  background: #e9f4ea;
+  color: #295c36;
+}
+
+.order-badge--cancelled,
+.order-badge--failed,
+.order-badge--refunded {
+  border-color: rgba(140, 61, 44, 0.35);
+  background: #fbefec;
+  color: #713020;
+}
+
+.order-badge--created,
+.order-badge--confirmed,
+.order-badge--shipped {
+  border-color: rgba(0, 0, 0, 0.28);
+}
+
 .customer-account__actions {
   display: flex;
   flex-wrap: wrap;
