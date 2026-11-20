@@ -7,7 +7,7 @@ import {
   type FormEvent,
 } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth, type CustomerPriceRole } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
 import { useProducts } from '../data/ProductsContext'
 import type { Product } from '../types'
@@ -36,9 +36,14 @@ function getWholesaleUnitPrice(
   return usdt ?? mayor ?? product.price
 }
 
-function getPaymentMethodLabel(method: WholesalePaymentMethod) {
-  return method === 'VES'
-    ? 'Bolívares (precio MAYOR)'
+function getPaymentMethodLabel(
+  method: WholesalePaymentMethod,
+  priceRole: CustomerPriceRole,
+) {
+  if (method === 'VES') return 'Bolívares (precio MAYOR)'
+  // El backend cobra siempre MAYOR a los mayoristas, incluso si eligen USDT.
+  return priceRole === 'mayorista'
+    ? 'USDT / USD (precio MAYOR)'
     : 'USDT / USD (precio USDT)'
 }
 
@@ -208,7 +213,7 @@ export function CartDrawer() {
       payment_method: paymentMethod === 'USDT' ? 'usdt' : 'bolivares',
     }
     if (isWholesale) {
-      body.notes = `Método de pago: ${getPaymentMethodLabel(paymentMethod)}`
+      body.notes = `Método de pago: ${getPaymentMethodLabel(paymentMethod, customer?.priceRole ?? 'none')}`
     }
 
     const idempotencyKey =
@@ -601,7 +606,8 @@ export function CartDrawer() {
               </div>
               {isWholesale && (
                 <p className="checkout__intro">
-                  Método de pago: {getPaymentMethodLabel(paymentMethod)}
+                  Método de pago:{' '}
+                  {getPaymentMethodLabel(paymentMethod, customer?.priceRole ?? 'none')}
                 </p>
               )}
 

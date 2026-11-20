@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Customer, RegisterResult } from './AuthContext'
+import type { Customer, CustomerPriceRole, RegisterResult } from './AuthContext'
 import { AuthContext } from './AuthContext'
 import {
   getUserFacingError,
@@ -121,14 +121,14 @@ function parseCustomer(payload: unknown): Customer | null {
     return null
   }
 
-  let isWholesale = false
+  let legacyWholesale = false
   if (typeof wholesaleValue === 'boolean') {
-    isWholesale = wholesaleValue
+    legacyWholesale = wholesaleValue
   } else if (typeof wholesaleValue === 'number') {
-    isWholesale = wholesaleValue === 1
+    legacyWholesale = wholesaleValue === 1
   } else if (typeof wholesaleValue === 'string') {
     const normalized = wholesaleValue.trim().toLowerCase()
-    isWholesale = [
+    legacyWholesale = [
       'true',
       '1',
       'yes',
@@ -141,6 +141,16 @@ function parseCustomer(payload: unknown): Customer | null {
     ].includes(normalized)
   }
 
+  // price_role es la fuente de verdad del backend. El flag legacy solo se
+  // conserva como compatibilidad con respuestas antiguas de la API.
+  const roleValue = customer.price_role ?? customer.priceRole
+  const priceRole: CustomerPriceRole =
+    roleValue === 'none' || roleValue === 'oferta' || roleValue === 'mayorista'
+      ? roleValue
+      : legacyWholesale
+        ? 'oferta'
+        : 'none'
+
   return {
     id: String(id),
     email,
@@ -148,7 +158,8 @@ function parseCustomer(payload: unknown): Customer | null {
     // Las APIs anteriores no enviaban este dato; en ese caso asumimos
     // que la cuenta ya estaba verificada para no bloquear a nadie.
     emailVerified: typeof verifiedValue === 'boolean' ? verifiedValue : true,
-    isWholesale,
+    isWholesale: priceRole !== 'none',
+    priceRole,
   }
 }
 

@@ -40,7 +40,9 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const [hasMore, setHasMore] = useState(false)
   const [totalProducts, setTotalProducts] = useState(0)
   const [appliedKey, setAppliedKey] = useState('')
-  const authScope = `${customer?.id ?? 'anon'}:${customer?.isWholesale ? 'w' : 'r'}`
+  // El catálogo trae distinto número de precios según el rol, así que debe
+  // recargarse cuando cambia (mayorista ve 2, oferta ve 3).
+  const authScope = `${customer?.id ?? 'anon'}:${customer?.priceRole ?? 'none'}`
 
   const loadedPage = useRef(0)
   const hasMoreRef = useRef(false)
