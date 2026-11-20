@@ -203,6 +203,9 @@ export function CartDrawer() {
         ? `${shippingAddress}, ${shippingPostal}`
         : shippingAddress,
       shipping_city: shippingCity,
+      // La API exige el método de pago explícito: si falta asume "bolivares"
+      // y factura con el precio mayor equivocado.
+      payment_method: paymentMethod === 'USDT' ? 'usdt' : 'bolivares',
     }
     if (isWholesale) {
       body.notes = `Método de pago: ${getPaymentMethodLabel(paymentMethod)}`
