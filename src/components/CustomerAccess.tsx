@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { fetchMyOrders } from '../data/orders'
+import { useOrders } from '../data/OrdersContext'
+import { isActiveOrder } from '../data/orders'
 import { formatPrice } from '../lib/format'
 import {
   getUserFacingError,
@@ -259,32 +260,15 @@ function formatOrderDate(value: string) {
 }
 
 export function CustomerAccount() {
-  const { customer, accessToken, loading, logout } = useAuth()
+  const { customer, loading, logout } = useAuth()
+  const {
+    orders,
+    loading: ordersLoading,
+    error: ordersError,
+  } = useOrders()
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [orders, setOrders] = useState<CustomerOrder[]>([])
-  const [ordersLoading, setOrdersLoading] = useState(true)
-  const [ordersError, setOrdersError] = useState<string | null>(null)
   const [tab, setTab] = useState<AccountTab>('active')
-
-  useEffect(() => {
-    if (!customer || !accessToken) return
-    const controller = new AbortController()
-    fetchMyOrders(accessToken, controller.signal)
-      .then((items) => {
-        if (controller.signal.aborted) return
-        setOrders(items)
-        setOrdersError(null)
-        setOrdersLoading(false)
-      })
-      .catch((cause: unknown) => {
-        if (!controller.signal.aborted) {
-          setOrdersError(getUserFacingError(cause, 'orders'))
-          setOrdersLoading(false)
-        }
-      })
-    return () => controller.abort()
-  }, [customer, accessToken])
 
   if (loading) {
     return (
@@ -297,9 +281,7 @@ export function CustomerAccount() {
     return <Navigate to="/iniciar-sesion" replace />
   }
 
-  const activeOrders = orders.filter(
-    (order) => order.status !== 'delivered' && order.status !== 'cancelled',
-  )
+  const activeOrders = orders.filter(isActiveOrder)
   const paidOrders = orders.filter((order) => order.payment_status === 'paid')
   const tabs: { key: AccountTab; label: string; items: CustomerOrder[] }[] = [
     { key: 'active', label: 'Activas', items: activeOrders },
@@ -380,23 +362,36 @@ export function CustomerAccount() {
             <ul className="customer-account__order-list">
               {visibleOrders.map((order) => (
                 <li className="customer-account__order" key={order.id}>
-                  <div className="customer-account__order-head">
-                    <strong>Pedido #{order.id.slice(0, 8)}</strong>
-                    <span>{formatPrice(order.total)}</span>
-                  </div>
-                  <p className="customer-account__order-meta">
-                    {formatOrderDate(order.created_at)} · {order.item_count}{' '}
-                    {order.item_count === 1 ? 'artículo' : 'artículos'} ·{' '}
-                    {paymentMethodLabels[order.payment_method] ?? order.payment_method}
-                  </p>
-                  <div className="customer-account__badges">
-                    <span className={`order-badge order-badge--${order.status}`}>
-                      {orderStatusLabels[order.status] ?? order.status}
+                  <Link
+                    className="customer-account__order-link"
+                    to={`/cuenta/pedido/${order.id}`}
+                    aria-label={`Ver detalle del pedido #${order.id.slice(0, 8)}`}
+                  >
+                    <div className="customer-account__order-head">
+                      <strong>Pedido #{order.id.slice(0, 8)}</strong>
+                      <span>{formatPrice(order.total)}</span>
+                    </div>
+                    <p className="customer-account__order-meta">
+                      {formatOrderDate(order.created_at)} · {order.item_count}{' '}
+                      {order.item_count === 1 ? 'artículo' : 'artículos'} ·{' '}
+                      {paymentMethodLabels[order.payment_method] ??
+                        order.payment_method}
+                    </p>
+                    <div className="customer-account__badges">
+                      <span className={`order-badge order-badge--${order.status}`}>
+                        {orderStatusLabels[order.status] ?? order.status}
+                      </span>
+                      <span
+                        className={`order-badge order-badge--${order.payment_status}`}
+                      >
+                        {paymentStatusLabels[order.payment_status] ??
+                          order.payment_status}
+                      </span>
+                    </div>
+                    <span className="customer-account__order-cta">
+                      Ver detalle <span aria-hidden="true">→</span>
                     </span>
-                    <span className={`order-badge order-badge--${order.payment_status}`}>
-                      {paymentStatusLabels[order.payment_status] ?? order.payment_status}
-                    </span>
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>

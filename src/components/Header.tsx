@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
+import { useOrders } from '../data/OrdersContext'
 import { Logo } from './Logo'
 import { getUserFacingError } from '../lib/userFacingError'
 
@@ -28,6 +29,30 @@ function BagIcon() {
         strokeLinecap="round"
       />
     </svg>
+  )
+}
+
+function AccountLink({ onClick }: { onClick?: () => void }) {
+  const { activeCount } = useOrders()
+  const label =
+    activeCount > 0
+      ? `Mi cuenta. ${activeCount} ${activeCount === 1 ? 'orden activa' : 'órdenes activas'}`
+      : 'Mi cuenta'
+
+  return (
+    <Link
+      className="header-account-link"
+      to="/cuenta"
+      onClick={onClick}
+      aria-label={label}
+    >
+      Mi cuenta
+      {activeCount > 0 && (
+        <span className="account-orders-count" aria-hidden="true">
+          {activeCount}
+        </span>
+      )}
+    </Link>
   )
 }
 
@@ -89,13 +114,7 @@ export function Header() {
             <div className="site-nav__account">
               {customer ? (
                 <>
-                  <Link
-                    className="header-account-link"
-                    to="/cuenta"
-                    onClick={closeMenu}
-                  >
-                    Mi cuenta
-                  </Link>
+                  <AccountLink onClick={closeMenu} />
                   <button
                     type="button"
                     className="header-account-link header-account-link--button"
@@ -150,13 +169,7 @@ export function Header() {
           {!authLoading &&
             (customer ? (
               <>
-                <Link
-                  className="header-account-link"
-                  to="/cuenta"
-                  onClick={closeMenu}
-                >
-                  Mi cuenta
-                </Link>
+                <AccountLink onClick={closeMenu} />
                 <button
                   type="button"
                   className="cart-button"

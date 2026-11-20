@@ -9,6 +9,8 @@ import {
 import { Link } from 'react-router-dom'
 import { useAuth, type CustomerPriceRole } from '../auth/AuthContext'
 import { useCart } from '../cart/useCart'
+import { useOrders } from '../data/OrdersContext'
+import { toCustomerOrder } from '../data/orders'
 import { useProducts } from '../data/ProductsContext'
 import type { Product } from '../types'
 import { formatPrice } from '../lib/format'
@@ -68,6 +70,7 @@ export function CartDrawer() {
     error: cartError,
     refresh,
   } = useCart()
+  const { addOptimistic, refresh: refreshOrders } = useOrders()
   const { findProduct } = useProducts()
   const [step, setStep] = useState<Step>('bag')
   const [order, setOrder] = useState<Order | null>(null)
@@ -268,6 +271,15 @@ export function CartDrawer() {
             : null,
       })
       setStep('done')
+
+      // El badge de "Mi cuenta" se actualiza al instante con el detalle que
+      // ya devolvió el checkout; el GET posterior solo confirma el estado.
+      const summary = toCustomerOrder(orderData)
+      if (summary) addOptimistic(summary)
+      void refreshOrders().catch(() => {
+        // El pedido ya se creó: un fallo al refrescar no debe mostrarse como error.
+      })
+
       try {
         await refresh()
       } catch {

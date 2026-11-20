@@ -60,6 +60,34 @@ export interface CustomerOrder {
   created_at: string
 }
 
+/** Linea del detalle: nombre/precio son snapshot; image_url se resuelve al leer. */
+export interface CustomerOrderItem {
+  id: string
+  product_id: string | null
+  name: string
+  sku: string | null
+  unit_price: number
+  quantity: number
+  line_total: number
+  image_url: string | null
+}
+
+/** Respuesta de GET /api/orders/:id (y del checkout) para la PDP del pedido. */
+export interface CustomerOrderDetail extends CustomerOrder {
+  subtotal: number
+  shipping_cost: number
+  tax_amount: number
+  notes: string | null
+  shipping: {
+    name: string | null
+    address: string | null
+    city: string | null
+    phone: string | null
+    address_id: string | null
+  }
+  items: CustomerOrderItem[]
+}
+
 export interface Category {
   id: string
   label: string

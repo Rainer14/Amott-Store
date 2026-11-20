@@ -16,11 +16,13 @@ import {
   EmailVerification,
   EmailVerificationNotice,
 } from './components/EmailVerification'
+import { OrderDetail } from './components/OrderDetail'
 import { ProductDetail } from './components/ProductDetail'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
 import { House } from './components/House'
+import { OrdersProvider } from './data/OrdersProvider'
 import { ProductsProvider } from './data/ProductsProvider'
 import './App.css'
 
@@ -55,43 +57,46 @@ function AboutPage() {
 function App() {
   return (
     <AuthProvider>
-      <ProductsProvider>
-        <CartProvider>
-          <ScrollToLocation />
-          <a className="skip-link" href="#main">
-            Saltar al contenido
-          </a>
-          <Header />
-          <main id="main">
-            <Routes>
-              <Route path="/" element={<Collection />} />
-              <Route path="/producto/:slug" element={<ProductDetail />} />
-              <Route path="/nosotros" element={<AboutPage />} />
-              <Route
-                path="/iniciar-sesion"
-                element={<CustomerAccess mode="login" />}
-              />
-              <Route
-                path="/registro"
-                element={<CustomerAccess mode="register" />}
-              />
-              <Route
-                path="/verificar-correo"
-                element={<EmailVerificationNotice />}
-              />
-              <Route
-                path="/verificar-correo/verificar"
-                element={<EmailVerification />}
-              />
-              <Route path="/cuenta" element={<CustomerAccount />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <Footer />
-          <CartDrawer />
-          <CartToast />
-        </CartProvider>
-      </ProductsProvider>
+      <OrdersProvider>
+        <ProductsProvider>
+          <CartProvider>
+            <ScrollToLocation />
+            <a className="skip-link" href="#main">
+              Saltar al contenido
+            </a>
+            <Header />
+            <main id="main">
+              <Routes>
+                <Route path="/" element={<Collection />} />
+                <Route path="/producto/:slug" element={<ProductDetail />} />
+                <Route path="/nosotros" element={<AboutPage />} />
+                <Route
+                  path="/iniciar-sesion"
+                  element={<CustomerAccess mode="login" />}
+                />
+                <Route
+                  path="/registro"
+                  element={<CustomerAccess mode="register" />}
+                />
+                <Route
+                  path="/verificar-correo"
+                  element={<EmailVerificationNotice />}
+                />
+                <Route
+                  path="/verificar-correo/verificar"
+                  element={<EmailVerification />}
+                />
+                <Route path="/cuenta" element={<CustomerAccount />} />
+                <Route path="/cuenta/pedido/:id" element={<OrderDetail />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+            <Footer />
+            <CartDrawer />
+            <CartToast />
+          </CartProvider>
+        </ProductsProvider>
+      </OrdersProvider>
     </AuthProvider>
   )
 }
