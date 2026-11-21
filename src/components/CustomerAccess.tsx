@@ -38,10 +38,14 @@ export function CustomerAccess({ mode }: { mode: 'login' | 'register' }) {
         const phone = String(formData.get('phone') ?? '').trim()
         const address = String(formData.get('address') ?? '').trim()
         const result = await register(name, email, password, phone, address)
-        navigate('/verificar-correo', {
-          replace: true,
-          state: { email: result.email },
-        })
+        if (result.sessionOpened) {
+          navigate(destination, { replace: true })
+        } else {
+          navigate('/verificar-correo', {
+            replace: true,
+            state: { email: result.email },
+          })
+        }
       } else {
         await login(email, password)
         navigate(destination, { replace: true })

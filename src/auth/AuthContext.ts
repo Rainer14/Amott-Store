@@ -18,6 +18,8 @@ export interface Customer {
 
 export interface RegisterResult {
   email: string
+  /** true cuando la verificación está suspendida y el registro ya inició sesión. */
+  sessionOpened: boolean
 }
 
 export interface AuthContextValue {

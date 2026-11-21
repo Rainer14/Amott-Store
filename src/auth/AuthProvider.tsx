@@ -363,8 +363,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       })
 
-      // La API nueva no abre sesión hasta verificar el correo. Si una
-      // versión anterior todavía la abre, la cerramos en segundo plano.
+      // Con la verificación suspendida, el registro devuelve tokens y abre
+      // sesión en el mismo paso: entramos a la tienda sin pasar por el correo.
+      if (getAccessToken(payload)) {
+        await completeSession(payload, normalizedEmail, password)
+        return { email: normalizedEmail, sessionOpened: true }
+      }
+
+      // La API con verificación activa no abre sesión. Si una versión
+      // anterior todavía la abre, la cerramos en segundo plano.
       try {
         await requestApi(
           '/api/customer-auth/logout',
@@ -379,9 +386,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCustomer(null)
       setError(null)
       rememberPendingEmail(normalizedEmail)
-      return { email: normalizedEmail }
+      return { email: normalizedEmail, sessionOpened: false }
     },
-    [],
+    [completeSession],
   )
 
   const verifyEmail = useCallback(
